@@ -9,6 +9,15 @@
   "background_color": "#fdf6e3",
   "theme_color": "#e85a71",
   "lang": "ja",
+  "share_target": {
+    "action": "./",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
   "icons": [
     {
       "src": "icon.svg",
