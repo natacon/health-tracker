@@ -6,6 +6,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Personal health/diet PWA for daily logging (weight, meals, exercise, mood, weather, checks). Single-user, no backend, no accounts. UI text is Japanese; code identifiers and comments are English.
 
+## Who this is for
+
+The single user is the developer's wife. Treat the following as the design context for any UX decision:
+
+- **Heavy SNS user.** She lives in Instagram/Threads/X. Visual outputs (the Preview tab, screenshots, share cards) and chip-style one-tap interactions match her habits; long forms and multi-step flows do not.
+- **Was logging diet via ChatGPT.** This app is replacing that workflow. The bar is conversational speed: if logging takes more taps than typing a sentence to a chatbot, she'll go back. Favor: favorites/`★いつもの`, paste-friendly fields, autofill (weather), Web Share Target (YouTube → exercise form).
+- **YouTube exercise videos.** She historically pasted video links or screenshots of YouTube watch history. Exercise events carry an optional `url`; YouTube URLs auto-render thumbnails everywhere they appear.
+- **Mobile-first, Tokyo, JP language.** Layout assumes a single-column phone viewport. Auto-features (weather, time, dates) hardcode Tokyo / `Asia/Tokyo` / Japanese day names — generalizing them is a non-goal.
+- **Solo, on her own device.** No multi-user, no auth, no sync server. Cross-device backup is the export/import folder, not a backend.
+
+When proposing features, prefer the SNS-pattern equivalent (streaks, share cards, badges, one-tap) over the productivity-app equivalent (forms, settings, configuration).
+
 ## Stack and conventions
 
 - Vanilla HTML/CSS/JS in a **single `index.html`** — all CSS in one `<style>`, all JS in one `<script>`. There is no build step, no bundler, no package manager, no test framework.
