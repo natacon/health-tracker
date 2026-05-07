@@ -396,7 +396,6 @@
         <button class="add-chip" data-type="meal"><span class="icon">🍽</span>食事</button>
         <button class="add-chip" data-type="exercise"><span class="icon">🏃</span>運動</button>
         <button class="add-chip" data-type="mood"><span class="icon">😊</span>気分</button>
-        <button class="add-chip" data-type="weather"><span class="icon">☀️</span>天気</button>
         <button class="add-chip" data-type="check"><span class="icon">✅</span>チェック</button>
       </div>
       <div class="add-form hide" id="addForm"></div>
@@ -1317,11 +1316,6 @@ function bindInputs() {
 
   document.querySelectorAll('#addChips .add-chip').forEach(chip => {
     chip.onclick = () => {
-      if (chip.dataset.type === 'weather' && !editingId && currentDate === todayStr()) {
-        cancelAddForm();
-        logCurrentWeather();
-        return;
-      }
       if (activeAddType === chip.dataset.type && !editingId) {
         cancelAddForm();
       } else {
