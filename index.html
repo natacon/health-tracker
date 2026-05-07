@@ -12,6 +12,7 @@
   :root {
     --ink: #2c2c2c;
     --ink-soft: #5a5a5a;
+    --ink-faint: #9a9a9a;
     --line: rgba(0, 0, 0, 0.08);
     --card: rgba(255, 255, 255, 0.78);
     --accent: #e85a71;
@@ -36,6 +37,21 @@
 
   .wrap { max-width: 760px; margin: 0 auto; }
 
+  /* ---------- Banner ---------- */
+  .banner {
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    color: #9a3412;
+    padding: 10px 14px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .banner .text { flex: 1; min-width: 200px; }
+  .banner button { font-size: 12px; padding: 6px 12px; }
+
+  /* ---------- Toolbar ---------- */
   .toolbar {
     display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
     background: var(--card);
@@ -55,6 +71,7 @@
   .toolbar .spacer { flex: 1; }
   .toolbar .status { font-size: 12px; color: var(--ink-soft); }
 
+  /* ---------- Buttons ---------- */
   button, .btn {
     border: 1px solid var(--line);
     background: #fff;
@@ -69,22 +86,7 @@
   button.ghost { background: transparent; }
   button.danger:hover { background: #fef2f2; border-color: var(--bad); color: var(--bad); }
 
-  .banner {
-    background: #fff7ed;
-    border: 1px solid #fed7aa;
-    color: #9a3412;
-    padding: 10px 14px;
-    border-radius: 12px;
-    margin-bottom: 12px;
-    font-size: 13px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-  .banner .text { flex: 1; min-width: 200px; }
-  .banner button { font-size: 12px; padding: 6px 12px; }
-
+  /* ---------- Tabs ---------- */
   .tabs {
     display: flex; gap: 6px;
     margin-bottom: 14px;
@@ -103,6 +105,7 @@
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
   }
 
+  /* ---------- Section ---------- */
   section {
     background: var(--card);
     backdrop-filter: blur(8px);
@@ -122,41 +125,132 @@
     padding-bottom: 8px;
   }
 
+  /* ---------- Quick add ---------- */
+  .add-chips {
+    display: flex; flex-wrap: wrap; gap: 8px;
+  }
+  .add-chip {
+    flex: 1 0 calc(33.33% - 8px);
+    min-width: 80px;
+    padding: 14px 6px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    text-align: center;
+    font-size: 13px;
+    transition: all 0.15s ease;
+  }
+  .add-chip:hover { transform: translateY(-1px); border-color: var(--accent); }
+  .add-chip.active {
+    background: var(--accent); color: #fff;
+    border-color: var(--accent); font-weight: 600;
+  }
+  .add-chip .icon {
+    display: block; font-size: 22px; margin-bottom: 2px;
+  }
+
+  /* ---------- Add form ---------- */
+  .add-form {
+    margin-top: 12px;
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.6);
+  }
+  .add-form .field { padding: 6px 0; }
+  .add-form .field label {
+    flex: 0 0 80px;
+    font-size: 12px; color: var(--ink-soft);
+  }
+  .add-form .actions {
+    display: flex; gap: 8px; justify-content: flex-end;
+    margin-top: 10px;
+  }
+
   .field {
     display: flex; align-items: center; gap: 12px;
-    padding: 6px 0;
   }
-  .field label { flex: 0 0 90px; font-size: 13px; color: var(--ink-soft); }
-  .field input[type="text"], .field input[type="number"] {
+  .field input[type="text"], .field input[type="number"], .field input[type="time"], .field select {
     flex: 1; padding: 8px 10px;
     border: 1px solid var(--line);
     border-radius: 8px; font: inherit; background: #fff;
   }
   .field .unit { font-size: 13px; color: var(--ink-soft); }
-  .field-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 18px; }
-  .field-block textarea {
-    width: 100%; padding: 10px 12px;
-    border: 1px solid var(--line);
-    border-radius: 8px; font: inherit; background: #fff;
-    resize: vertical; min-height: 90px;
-    line-height: 1.6;
-  }
 
-  .moods { display: flex; gap: 8px; margin-top: 6px; }
-  .mood {
-    flex: 1; text-align: center; padding: 10px 0;
-    border-radius: 10px; font-size: 13px;
-    border: 1px solid var(--line);
-    background: rgba(255, 255, 255, 0.6);
-    cursor: pointer; user-select: none;
-    transition: all 0.15s ease;
+  .seg {
+    display: flex; gap: 6px; flex: 1; flex-wrap: wrap;
   }
-  .mood:hover { transform: translateY(-1px); }
-  .mood.selected {
+  .seg button {
+    flex: 1; min-width: 70px;
+    padding: 8px 6px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid var(--line);
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .seg button.on {
     background: var(--accent); color: #fff;
     border-color: var(--accent); font-weight: 600;
   }
+  .seg button:hover { transform: none; box-shadow: none; }
 
+  /* ---------- Timeline ---------- */
+  .timeline { display: flex; flex-direction: column; gap: 6px; }
+  .timeline .empty {
+    padding: 24px 12px; text-align: center;
+    color: var(--ink-faint); font-size: 13px;
+  }
+  .tl-event {
+    display: grid;
+    grid-template-columns: 56px 32px 1fr auto;
+    gap: 10px;
+    align-items: start;
+    padding: 10px 4px;
+    border-bottom: 1px dashed var(--line);
+  }
+  .tl-event:last-child { border-bottom: none; }
+  .tl-event .time {
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-soft);
+    padding-top: 2px;
+  }
+  .tl-event .type-icon {
+    font-size: 18px;
+    text-align: center;
+    line-height: 1.4;
+  }
+  .tl-event .body {
+    font-size: 14px;
+    line-height: 1.4;
+    word-break: break-word;
+  }
+  .tl-event .body .sub {
+    color: var(--ink-soft); font-size: 12px;
+  }
+  .tl-event .body .kcal {
+    color: var(--accent); font-weight: 600; font-size: 12px;
+    margin-left: 6px;
+  }
+  .tl-event .actions {
+    display: flex; gap: 4px;
+  }
+  .tl-event .actions button {
+    background: transparent; border: none;
+    padding: 4px 8px; font-size: 14px;
+    color: var(--ink-faint);
+    border-radius: 6px;
+  }
+  .tl-event .actions button:hover {
+    background: rgba(0, 0, 0, 0.04);
+    color: var(--ink);
+    box-shadow: none; transform: none;
+  }
+  .tl-event .actions .delete:hover { color: var(--bad); }
+
+  /* ---------- Preview ---------- */
   .weight-grid { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 10px; }
   .weight-card {
     text-align: center; padding: 12px 8px;
@@ -184,23 +278,6 @@
     transition: width 0.3s ease;
   }
 
-  ul.check { list-style: none; padding: 0; margin: 0; }
-  ul.check li {
-    display: flex; align-items: center; gap: 12px;
-    padding: 9px 4px;
-    border-bottom: 1px dashed var(--line);
-    font-size: 14px;
-  }
-  ul.check li:last-child { border-bottom: none; }
-  ul.check input[type="checkbox"] {
-    width: 18px; height: 18px;
-    accent-color: var(--accent); cursor: pointer;
-  }
-  ul.check li.done label {
-    text-decoration: line-through; color: var(--ink-soft);
-  }
-
-  /* Preview */
   .preview .top-info { text-align: center; margin-bottom: 20px; }
   .preview .top-info h1 {
     margin: 0; font-size: 12px; letter-spacing: 0.2em;
@@ -216,21 +293,29 @@
   .preview .info-grid .row span:last-child { font-weight: 600; }
   .preview .meal-list, .preview .ex-list { list-style: none; padding: 0; margin: 0; }
   .preview .meal-list li, .preview .ex-list li {
+    display: flex; justify-content: space-between;
     padding: 8px 0;
     border-bottom: 1px dashed var(--line);
     font-size: 14px;
   }
   .preview .meal-list li:last-child, .preview .ex-list li:last-child { border-bottom: none; }
+  .preview .meal-list .tag {
+    display: inline-block;
+    min-width: 36px;
+    padding: 2px 8px;
+    margin-right: 10px;
+    border-radius: 6px;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 0.1em;
+    text-align: center;
+    background: var(--accent); color: #fff;
+  }
   .preview .total {
     margin-top: 12px; text-align: right;
     font-size: 13px; font-weight: 600;
   }
   .preview .total .num {
     font-size: 22px; margin-left: 6px; color: var(--accent);
-  }
-  .preview footer {
-    text-align: center; margin-top: 24px;
-    font-size: 11px; color: var(--ink-soft); letter-spacing: 0.1em;
   }
   .preview .check-grid { display: flex; flex-wrap: wrap; gap: 8px; }
   .preview .chip {
@@ -243,8 +328,12 @@
     background: var(--accent); color: #fff;
     border-color: var(--accent); font-weight: 600;
   }
+  .preview footer {
+    text-align: center; margin-top: 24px;
+    font-size: 11px; color: var(--ink-soft); letter-spacing: 0.1em;
+  }
 
-  /* History */
+  /* ---------- History ---------- */
   .history-list { display: flex; flex-direction: column; gap: 6px; }
   .history-item {
     display: flex; justify-content: space-between; align-items: center;
@@ -258,8 +347,7 @@
   .history-item .date { font-weight: 600; }
   .history-item .meta { color: var(--ink-soft); font-size: 12px; }
 
-  .hide { display: none !important; }
-
+  /* ---------- Storage info ---------- */
   .storage-info {
     font-size: 12px; color: var(--ink-soft);
     padding: 8px 12px;
@@ -271,9 +359,11 @@
   }
   .storage-info b { color: var(--ink); }
 
+  .hide { display: none !important; }
+
   @media (max-width: 480px) {
-    .field-grid-2 { grid-template-columns: 1fr; }
     .weight-grid { grid-template-columns: 1fr; }
+    .add-chip { flex: 1 0 calc(33.33% - 8px); }
   }
 </style>
 </head>
@@ -297,82 +387,31 @@
 
   <!-- Tabs -->
   <div class="tabs">
-    <button data-tab="edit" class="active">編集</button>
+    <button data-tab="timeline" class="active">タイムライン</button>
     <button data-tab="preview">プレビュー</button>
     <button data-tab="history">履歴</button>
     <button data-tab="settings">設定</button>
   </div>
 
-  <!-- ============ Edit Tab ============ -->
-  <div id="tab-edit">
+  <!-- ============ Timeline Tab ============ -->
+  <div id="tab-timeline">
 
     <section>
-      <h2>今日の情報</h2>
-      <div class="field-grid-2">
-        <div class="field"><label>天気</label><input type="text" id="f_weather" placeholder="☀️ 晴れ"></div>
-        <div class="field"><label>気温</label><input type="number" id="f_temp" placeholder="22"><span class="unit">°C</span></div>
+      <h2>追加</h2>
+      <div class="add-chips" id="addChips">
+        <button class="add-chip" data-type="weight"><span class="icon">⚖️</span>体重</button>
+        <button class="add-chip" data-type="meal"><span class="icon">🍽</span>食事</button>
+        <button class="add-chip" data-type="exercise"><span class="icon">🏃</span>運動</button>
+        <button class="add-chip" data-type="mood"><span class="icon">😊</span>気分</button>
+        <button class="add-chip" data-type="weather"><span class="icon">☀️</span>天気</button>
+        <button class="add-chip" data-type="check"><span class="icon">✅</span>チェック</button>
       </div>
-      <div style="font-size:13px;color:var(--ink-soft);margin-top:10px">気分</div>
-      <div class="moods" id="moodPicker">
-        <div class="mood" data-mood="good">😊 にこにこ</div>
-        <div class="mood" data-mood="normal">😐 ふつう</div>
-        <div class="mood" data-mood="bad">😞 わるい</div>
-      </div>
+      <div class="add-form hide" id="addForm"></div>
     </section>
 
     <section>
-      <h2>体重</h2>
-      <div class="field-grid-2">
-        <div class="field"><label>今日</label><input type="number" step="0.1" id="f_weight" placeholder="48.2"><span class="unit">kg</span></div>
-      </div>
-      <div class="weight-grid" style="margin-top:14px">
-        <div class="weight-card">
-          <div class="label">今日</div>
-          <div class="value" id="p_today">—<span class="unit">kg</span></div>
-        </div>
-        <div class="weight-card">
-          <div class="label">前日比</div>
-          <div class="value flat" id="p_diff">—<span class="unit">kg</span></div>
-        </div>
-        <div class="weight-card">
-          <div class="label">目標まで</div>
-          <div class="value" id="p_togoal">—<span class="unit">kg</span></div>
-        </div>
-      </div>
-      <div class="goal-bar"><span id="p_bar" style="width:0%"></span></div>
-    </section>
-
-    <section>
-      <h2>出来たことチェック</h2>
-      <ul class="check" id="checkList">
-        <li><input type="checkbox" data-key="stretch" id="c_stretch"><label for="c_stretch">ストレッチ</label></li>
-        <li><input type="checkbox" data-key="strength" id="c_strength"><label for="c_strength">筋トレ</label></li>
-        <li><input type="checkbox" data-key="cardio" id="c_cardio"><label for="c_cardio">有酸素運動</label></li>
-        <li><input type="checkbox" data-key="water" id="c_water"><label for="c_water">水2L飲む</label></li>
-        <li><input type="checkbox" data-key="noSnack" id="c_noSnack"><label for="c_noSnack">間食なし</label></li>
-      </ul>
-    </section>
-
-    <section>
-      <h2>食事（記録から貼り付け）</h2>
-      <div class="field-block">
-        <textarea id="f_meals" placeholder="朝: オートミール（180kcal）&#10;昼: サラダチキン＋玄米（420kcal）&#10;夜: 鮭・味噌汁・野菜（480kcal）"></textarea>
-      </div>
-      <div class="field" style="margin-top:8px">
-        <label>トータル</label>
-        <input type="number" id="f_meal_total" placeholder="1080"><span class="unit">kcal</span>
-      </div>
-    </section>
-
-    <section>
-      <h2>運動（記録から貼り付け）</h2>
-      <div class="field-block">
-        <textarea id="f_ex" placeholder="歩数: 8,420 歩&#10;YouTube（筋トレ）: 20分&#10;ストレッチ: 10分"></textarea>
-      </div>
-      <div class="field" style="margin-top:8px">
-        <label>消費kcal</label>
-        <input type="number" id="f_ex_total" placeholder="2150"><span class="unit">kcal</span>
-      </div>
+      <h2>記録</h2>
+      <div class="timeline" id="timeline"></div>
     </section>
 
   </div>
@@ -394,7 +433,7 @@
   <div id="tab-settings" class="hide">
     <section>
       <h2>目標</h2>
-      <div class="field"><label>目標体重</label><input type="number" step="0.1" id="f_goal" placeholder="46"><span class="unit">kg</span></div>
+      <div class="field"><label style="flex:0 0 90px;font-size:13px;color:var(--ink-soft)">目標体重</label><input type="number" step="0.1" id="f_goal" placeholder="46"><span class="unit">kg</span></div>
     </section>
 
     <section>
@@ -406,8 +445,7 @@
       </div>
       <p style="font-size:12px;color:var(--ink-soft);margin-top:14px">
         フォルダを選ぶと、その中に <code>YYYY-MM-DD.json</code> 形式でデータが保存されます。<br>
-        フォルダごとバックアップ・移動・別端末への持ち込みが可能です。<br>
-        フォルダ未選択の場合、データはこのブラウザの内部ストレージに保存されます（端末を変えると見えません）。
+        フォルダ未選択の場合、データはこのブラウザの内部ストレージに保存されます。
       </p>
     </section>
 
@@ -425,7 +463,7 @@
 </div>
 
 <script>
-//===================== IndexedDB (for FS dirHandle) =====================
+//===================== IndexedDB (FS dirHandle) =====================
 function idbOpen() {
   return new Promise((resolve, reject) => {
     const r = indexedDB.open('health-tracker', 1);
@@ -464,19 +502,17 @@ async function idbDel(key) {
 //===================== Storage =====================
 const LS_KEY = 'health-tracker-v1';
 const SETTINGS_KEY = 'health-tracker-settings-v1';
-const cache = {}; // dateStr -> entry
+const cache = {}; // dateStr -> { events: [...] }
 
 const storage = {
-  mode: 'local', // 'local' | 'fs'
+  mode: 'local',
   dirHandle: null,
 
   isFsAvailable() { return 'showDirectoryPicker' in window; },
 
   async init() {
-    // load goal/settings
     settings = Object.assign({ goalWeight: 46 }, JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'));
 
-    // try restore previously chosen directory
     if (this.isFsAvailable()) {
       try {
         const h = await idbGet('dirHandle');
@@ -488,21 +524,21 @@ const storage = {
             await this.reloadFromFs();
             return;
           } else if (perm === 'prompt') {
-            // need user gesture — show banner
-            this.dirHandle = h; // keep candidate
+            this.dirHandle = h;
             document.getElementById('banner').classList.remove('hide');
           }
         }
       } catch (e) { console.warn(e); }
     }
 
-    // fallback: load from localStorage
     Object.assign(cache, JSON.parse(localStorage.getItem(LS_KEY) || '{}'));
+    // migrate cache entries that are old shape
+    Object.keys(cache).forEach(k => { cache[k] = migrateEntry(cache[k]); });
   },
 
   async pickDirectory() {
     if (!this.isFsAvailable()) {
-      alert('このブラウザはフォルダ選択に対応していません。\nChrome / Edge / Samsung Internet を試してください。');
+      alert('このブラウザはフォルダ選択に対応していません。\nChrome / Edge / Samsung Internet をご利用ください。');
       return false;
     }
     let handle;
@@ -516,7 +552,6 @@ const storage = {
     await idbPut('dirHandle', handle);
     this.dirHandle = handle;
 
-    // migrate localStorage data into FS (don't overwrite existing files)
     const local = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
 
     this.mode = 'fs';
@@ -524,7 +559,11 @@ const storage = {
 
     for (const [date, entry] of Object.entries(local)) {
       if (!cache[date]) {
-        try { await this.writeFile(date, entry); cache[date] = entry; } catch {}
+        try {
+          const migrated = migrateEntry(entry);
+          await this.writeFile(date, migrated);
+          cache[date] = migrated;
+        } catch {}
       }
     }
     return true;
@@ -549,6 +588,7 @@ const storage = {
     this.mode = 'local';
     Object.keys(cache).forEach(k => delete cache[k]);
     Object.assign(cache, JSON.parse(localStorage.getItem(LS_KEY) || '{}'));
+    Object.keys(cache).forEach(k => { cache[k] = migrateEntry(cache[k]); });
   },
 
   async reloadFromFs() {
@@ -561,7 +601,7 @@ const storage = {
       try {
         const file = await fh.getFile();
         const text = await file.text();
-        cache[m[1]] = JSON.parse(text);
+        cache[m[1]] = migrateEntry(JSON.parse(text));
       } catch {}
     }
   },
@@ -579,7 +619,6 @@ const storage = {
       try {
         await this.writeFile(date, entry);
       } catch (e) {
-        // try to re-request permission
         try {
           const perm = await this.dirHandle.requestPermission({ mode: 'readwrite' });
           if (perm === 'granted') {
@@ -587,7 +626,6 @@ const storage = {
             return;
           }
         } catch {}
-        // fallback to local
         const all = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
         all[date] = entry;
         localStorage.setItem(LS_KEY, JSON.stringify(all));
@@ -617,19 +655,123 @@ function saveSettings() {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
 }
 
+//===================== Migration (old shape -> events) =====================
+function migrateEntry(old) {
+  if (!old || typeof old !== 'object') return { events: [] };
+  if (Array.isArray(old.events)) return old;
+
+  const events = [];
+  const push = (time, type, payload) => events.push(Object.assign({ id: uid(), time, type }, payload));
+
+  if (old.weight !== undefined && old.weight !== '') {
+    const v = parseFloat(old.weight);
+    if (Number.isFinite(v)) push('07:00', 'weight', { value: v });
+  }
+  if (old.weather || old.temp !== undefined) {
+    push('08:00', 'weather', {
+      weather: old.weather || '',
+      temp: old.temp !== '' && old.temp !== undefined ? parseFloat(old.temp) : ''
+    });
+  }
+  if (old.mood) push('09:00', 'mood', { value: old.mood });
+  if (old.checks) {
+    let i = 0;
+    Object.entries(old.checks).forEach(([k, v]) => {
+      if (v) push(`${10 + i}:00`, 'check', { key: k });
+      i++;
+    });
+  }
+  // meals (old shape: textarea string + total kcal)
+  if (typeof old.meals === 'string' && old.meals.trim()) {
+    const lines = old.meals.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    const total = parseFloat(old.mealTotal);
+    const slots = ['08:00', '12:00', '19:00', '15:00'];
+    lines.forEach((line, i) => {
+      const m = line.match(/^(朝|昼|夜|間食)?[\s::：\-]*([^（(]*)(?:[（(](\d+(?:\.\d+)?)\s*kcal[)）])?$/);
+      const label = (m && m[1]) || (i === 0 ? '朝' : i === 1 ? '昼' : i === 2 ? '夜' : '間食');
+      const text = (m && m[2] || line).trim();
+      const kcal = m && m[3] ? parseFloat(m[3]) : '';
+      push(slots[i] || '15:00', 'meal', { label, text, kcal });
+    });
+    if (Number.isFinite(total) && lines.length > 0) {
+      // distribute total if no per-line kcal recorded
+      const hasKcal = events.some(e => e.type === 'meal' && Number.isFinite(parseFloat(e.kcal)));
+      if (!hasKcal) {
+        const last = events.filter(e => e.type === 'meal').pop();
+        if (last) last.kcal = total;
+      }
+    }
+  } else if (Array.isArray(old.meals)) {
+    const slots = ['08:00', '12:00', '19:00', '15:00'];
+    old.meals.forEach((m, i) => {
+      if (m && (m.text || m.kcal)) {
+        push(slots[i] || '15:00', 'meal', {
+          label: m.time || (i === 0 ? '朝' : i === 1 ? '昼' : i === 2 ? '夜' : '間食'),
+          text: m.text || '',
+          kcal: parseFloat(m.kcal) || ''
+        });
+      }
+    });
+  }
+  // exercise
+  if (typeof old.exercise === 'string' && old.exercise.trim()) {
+    const lines = old.exercise.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    lines.forEach((line, i) => {
+      const m = line.match(/^([^:：]+)[:：]?\s*(.*)$/);
+      push(`${17 + Math.min(i, 5)}:00`, 'exercise', {
+        name: (m && m[1] || line).trim(),
+        value: (m && m[2] || '').trim(),
+        kcal: ''
+      });
+    });
+    const total = parseFloat(old.exerciseTotal);
+    if (Number.isFinite(total)) {
+      const last = events.filter(e => e.type === 'exercise').pop();
+      if (last) last.kcal = total;
+    }
+  } else if (Array.isArray(old.exercises)) {
+    old.exercises.forEach((e, i) => {
+      if (e && (e.name || e.value)) {
+        push(`${17 + Math.min(i, 5)}:00`, 'exercise', {
+          name: e.name || '',
+          value: e.value || '',
+          kcal: parseFloat(e.kcal) || ''
+        });
+      }
+    });
+  }
+
+  return { events };
+}
+
+//===================== Constants =====================
+const TYPE_META = {
+  weight:   { icon: '⚖️', label: '体重' },
+  meal:     { icon: '🍽',  label: '食事' },
+  exercise: { icon: '🏃', label: '運動' },
+  mood:     { icon: '😊', label: '気分' },
+  weather:  { icon: '☀️', label: '天気' },
+  check:    { icon: '✅', label: 'チェック' }
+};
+
+const CHECK_LABELS = {
+  stretch: 'ストレッチ', strength: '筋トレ', cardio: '有酸素運動',
+  water: '水2L飲む', noSnack: '間食なし'
+};
+
+const MOOD_LABELS = {
+  good: '😊 にこにこ', normal: '😐 ふつう', bad: '😞 わるい'
+};
+
+const MEAL_LABELS = ['朝', '昼', '夜', '間食'];
+
 //===================== State =====================
 let currentDate = todayStr();
-let entry = emptyEntry();
+let entry = { events: [] };
+let editingId = null; // id of event being edited (null if adding new)
+let activeAddType = null;
 
-function emptyEntry() {
-  return {
-    weather: '', temp: '', mood: '',
-    weight: '',
-    checks: { stretch: false, strength: false, cardio: false, water: false, noSnack: false },
-    meals: '', mealTotal: '',
-    exercise: '', exerciseTotal: ''
-  };
-}
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 
 function todayStr() {
   const d = new Date();
@@ -645,33 +787,22 @@ function prevDateStr(dateStr) {
   d.setDate(d.getDate() - 1);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
+function nowTimeForDate(dateStr) {
+  if (dateStr === todayStr()) {
+    const d = new Date();
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  }
+  return '12:00';
+}
 
 function loadEntry(date) {
   currentDate = date;
-  entry = cache[date] ? JSON.parse(JSON.stringify(cache[date])) : emptyEntry();
-  // back-compat: migrate older array-based shape
-  if (Array.isArray(entry.meals)) {
-    const lines = entry.meals.filter(m => m.text || m.kcal).map(m =>
-      `${m.time ? m.time + ': ' : ''}${m.text || ''}${m.kcal ? '（' + m.kcal + 'kcal）' : ''}`);
-    const total = entry.meals.reduce((s, m) => s + (parseFloat(m.kcal) || 0), 0);
-    entry.meals = lines.join('\n');
-    entry.mealTotal = total ? String(total) : '';
-  }
-  if (Array.isArray(entry.exercises)) {
-    const lines = entry.exercises.filter(e => e.name || e.value).map(e =>
-      `${e.name || ''}${e.value ? ': ' + e.value : ''}`);
-    const total = entry.exercises.reduce((s, e) => s + (parseFloat(e.kcal) || 0), 0);
-    entry.exercise = lines.join('\n');
-    entry.exerciseTotal = total ? String(total) : '';
-    delete entry.exercises;
-  }
-  if (entry.exercise === undefined) entry.exercise = '';
-  if (entry.exerciseTotal === undefined) entry.exerciseTotal = '';
-  if (typeof entry.meals !== 'string') entry.meals = '';
-  if (entry.mealTotal === undefined) entry.mealTotal = '';
-
-  renderForm();
-  updateWeightCards();
+  entry = cache[date] ? JSON.parse(JSON.stringify(cache[date])) : { events: [] };
+  if (!Array.isArray(entry.events)) entry = { events: [] };
+  cancelAddForm();
+  document.getElementById('dateInput').value = currentDate;
+  document.getElementById('f_goal').value = settings.goalWeight ?? '';
+  renderTimeline();
 }
 
 let saveTimer = null;
@@ -683,7 +814,7 @@ function scheduleSave() {
       await storage.save(currentDate, entry);
       setStatus(storage.mode === 'fs' ? '保存しました ✓ (ファイル)' : '保存しました ✓');
       renderHistory();
-    } catch (e) {
+    } catch {
       setStatus('保存失敗 — ローカルに退避');
     }
   }, 250);
@@ -692,106 +823,292 @@ function setStatus(text) {
   document.getElementById('saveStatus').textContent = text;
 }
 
-//===================== Render Form =====================
-function renderForm() {
-  document.getElementById('dateInput').value = currentDate;
-  document.getElementById('f_weather').value = entry.weather || '';
-  document.getElementById('f_temp').value = entry.temp ?? '';
-  document.getElementById('f_weight').value = entry.weight ?? '';
-  document.getElementById('f_goal').value = settings.goalWeight ?? '';
-  document.getElementById('f_meals').value = entry.meals || '';
-  document.getElementById('f_meal_total').value = entry.mealTotal ?? '';
-  document.getElementById('f_ex').value = entry.exercise || '';
-  document.getElementById('f_ex_total').value = entry.exerciseTotal ?? '';
+//===================== Quick Add =====================
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
 
-  document.querySelectorAll('#moodPicker .mood').forEach(el => {
-    el.classList.toggle('selected', el.dataset.mood === entry.mood);
+function buildAddForm(type, prefill = null) {
+  const t = nowTimeForDate(currentDate);
+  const time = prefill?.time ?? t;
+
+  let inner = '';
+  if (type === 'weight') {
+    inner = `
+      <div class="field"><label>時刻</label><input type="time" data-f="time" value="${time}"></div>
+      <div class="field"><label>体重</label><input type="number" step="0.1" data-f="value" placeholder="48.2" value="${prefill?.value ?? ''}"><span class="unit">kg</span></div>
+    `;
+  } else if (type === 'meal') {
+    inner = `
+      <div class="field"><label>時刻</label><input type="time" data-f="time" value="${time}"></div>
+      <div class="field"><label>区分</label>
+        <div class="seg" data-seg="label">
+          ${MEAL_LABELS.map(l => `<button type="button" class="${prefill?.label === l ? 'on' : ''}" data-val="${l}">${l}</button>`).join('')}
+        </div>
+      </div>
+      <div class="field"><label>内容</label><input type="text" data-f="text" placeholder="オートミール" value="${escapeHtml(prefill?.text ?? '')}"></div>
+      <div class="field"><label>kcal</label><input type="number" data-f="kcal" placeholder="180" value="${prefill?.kcal ?? ''}"><span class="unit">kcal</span></div>
+    `;
+  } else if (type === 'exercise') {
+    inner = `
+      <div class="field"><label>時刻</label><input type="time" data-f="time" value="${time}"></div>
+      <div class="field"><label>種目</label><input type="text" data-f="name" placeholder="歩数 / YouTube など" value="${escapeHtml(prefill?.name ?? '')}"></div>
+      <div class="field"><label>内容</label><input type="text" data-f="value" placeholder="8,420歩 / 20分" value="${escapeHtml(prefill?.value ?? '')}"></div>
+      <div class="field"><label>消費kcal</label><input type="number" data-f="kcal" placeholder="200" value="${prefill?.kcal ?? ''}"><span class="unit">kcal</span></div>
+    `;
+  } else if (type === 'mood') {
+    inner = `
+      <div class="field"><label>時刻</label><input type="time" data-f="time" value="${time}"></div>
+      <div class="field"><label>気分</label>
+        <div class="seg" data-seg="value">
+          ${Object.entries(MOOD_LABELS).map(([k, l]) =>
+            `<button type="button" class="${prefill?.value === k ? 'on' : ''}" data-val="${k}">${l}</button>`).join('')}
+        </div>
+      </div>
+    `;
+  } else if (type === 'weather') {
+    inner = `
+      <div class="field"><label>時刻</label><input type="time" data-f="time" value="${time}"></div>
+      <div class="field"><label>天気</label><input type="text" data-f="weather" placeholder="☀️ 晴れ" value="${escapeHtml(prefill?.weather ?? '')}"></div>
+      <div class="field"><label>気温</label><input type="number" data-f="temp" placeholder="22" value="${prefill?.temp ?? ''}"><span class="unit">°C</span></div>
+    `;
+  } else if (type === 'check') {
+    inner = `
+      <div class="field"><label>時刻</label><input type="time" data-f="time" value="${time}"></div>
+      <div class="field"><label>項目</label>
+        <div class="seg" data-seg="key" style="flex-direction:column;align-items:stretch">
+          ${Object.entries(CHECK_LABELS).map(([k, l]) =>
+            `<button type="button" class="${prefill?.key === k ? 'on' : ''}" data-val="${k}">${l}</button>`).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  return `
+    ${inner}
+    <div class="actions">
+      <button type="button" class="ghost" data-act="cancel">キャンセル</button>
+      <button type="button" class="primary" data-act="save">${editingId ? '更新' : '追加'}</button>
+    </div>
+  `;
+}
+
+function openAddForm(type, prefill = null) {
+  activeAddType = type;
+  const form = document.getElementById('addForm');
+  form.classList.remove('hide');
+  form.innerHTML = buildAddForm(type, prefill);
+
+  document.querySelectorAll('#addChips .add-chip').forEach(c =>
+    c.classList.toggle('active', c.dataset.type === type));
+
+  // bind seg buttons
+  form.querySelectorAll('.seg').forEach(seg => {
+    seg.querySelectorAll('button').forEach(b => {
+      b.onclick = () => {
+        seg.querySelectorAll('button').forEach(x => x.classList.remove('on'));
+        b.classList.add('on');
+      };
+    });
   });
 
-  Object.keys(entry.checks).forEach(k => {
-    const cb = document.querySelector(`#checkList input[data-key="${k}"]`);
-    if (cb) {
-      cb.checked = !!entry.checks[k];
-      cb.closest('li').classList.toggle('done', cb.checked);
-    }
+  form.querySelector('[data-act="cancel"]').onclick = cancelAddForm;
+  form.querySelector('[data-act="save"]').onclick = saveAddForm;
+}
+
+function cancelAddForm() {
+  activeAddType = null;
+  editingId = null;
+  const form = document.getElementById('addForm');
+  form.classList.add('hide');
+  form.innerHTML = '';
+  document.querySelectorAll('#addChips .add-chip').forEach(c => c.classList.remove('active'));
+}
+
+function saveAddForm() {
+  const form = document.getElementById('addForm');
+  const get = name => {
+    const el = form.querySelector(`[data-f="${name}"]`);
+    return el ? el.value : '';
+  };
+  const getSeg = name => {
+    const el = form.querySelector(`[data-seg="${name}"] button.on`);
+    return el ? el.dataset.val : '';
+  };
+
+  const time = get('time') || nowTimeForDate(currentDate);
+  let payload = { time, type: activeAddType };
+
+  if (activeAddType === 'weight') {
+    const v = parseFloat(get('value'));
+    if (!Number.isFinite(v)) { alert('体重を入力してください'); return; }
+    payload.value = v;
+  } else if (activeAddType === 'meal') {
+    const label = getSeg('label');
+    const text = get('text').trim();
+    const kcal = get('kcal');
+    if (!label) { alert('区分を選んでください'); return; }
+    if (!text && !kcal) { alert('内容またはkcalを入力してください'); return; }
+    payload.label = label;
+    payload.text = text;
+    payload.kcal = kcal === '' ? '' : parseFloat(kcal);
+  } else if (activeAddType === 'exercise') {
+    const name = get('name').trim();
+    if (!name) { alert('種目を入力してください'); return; }
+    payload.name = name;
+    payload.value = get('value').trim();
+    const kcal = get('kcal');
+    payload.kcal = kcal === '' ? '' : parseFloat(kcal);
+  } else if (activeAddType === 'mood') {
+    const v = getSeg('value');
+    if (!v) { alert('気分を選んでください'); return; }
+    payload.value = v;
+  } else if (activeAddType === 'weather') {
+    payload.weather = get('weather').trim();
+    const t = get('temp');
+    payload.temp = t === '' ? '' : parseFloat(t);
+    if (!payload.weather && payload.temp === '') { alert('天気か気温を入力してください'); return; }
+  } else if (activeAddType === 'check') {
+    const key = getSeg('key');
+    if (!key) { alert('項目を選んでください'); return; }
+    payload.key = key;
+  }
+
+  if (editingId) {
+    const idx = entry.events.findIndex(e => e.id === editingId);
+    if (idx >= 0) entry.events[idx] = Object.assign({}, entry.events[idx], payload);
+  } else {
+    entry.events.push(Object.assign({ id: uid() }, payload));
+  }
+  cancelAddForm();
+  renderTimeline();
+  scheduleSave();
+}
+
+//===================== Timeline =====================
+function sortedEvents() {
+  return entry.events.slice().sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+}
+
+function eventBodyHtml(e) {
+  if (e.type === 'weight') {
+    return `<b>${Number.isFinite(e.value) ? e.value.toFixed(1) : '—'}</b> kg`;
+  }
+  if (e.type === 'meal') {
+    const k = parseFloat(e.kcal);
+    return `<b>${escapeHtml(e.label || '')}</b> ${escapeHtml(e.text || '')}${Number.isFinite(k) ? ` <span class="kcal">${k.toLocaleString()} kcal</span>` : ''}`;
+  }
+  if (e.type === 'exercise') {
+    const k = parseFloat(e.kcal);
+    return `<b>${escapeHtml(e.name || '')}</b>${e.value ? ` <span class="sub">${escapeHtml(e.value)}</span>` : ''}${Number.isFinite(k) ? ` <span class="kcal">${k.toLocaleString()} kcal</span>` : ''}`;
+  }
+  if (e.type === 'mood') return `${MOOD_LABELS[e.value] || '—'}`;
+  if (e.type === 'weather') {
+    const t = parseFloat(e.temp);
+    return `${escapeHtml(e.weather || '')}${Number.isFinite(t) ? ` <span class="sub">${t}°C</span>` : ''}`;
+  }
+  if (e.type === 'check') return `${CHECK_LABELS[e.key] || '?'}`;
+  return '';
+}
+
+function renderTimeline() {
+  const tl = document.getElementById('timeline');
+  const events = sortedEvents();
+  if (events.length === 0) {
+    tl.innerHTML = '<div class="empty">まだ記録がありません。<br>上のボタンから追加してください。</div>';
+    return;
+  }
+  tl.innerHTML = events.map(e => `
+    <div class="tl-event" data-id="${e.id}">
+      <div class="time">${escapeHtml(e.time || '')}</div>
+      <div class="type-icon">${TYPE_META[e.type]?.icon || '•'}</div>
+      <div class="body">${eventBodyHtml(e)}</div>
+      <div class="actions">
+        <button data-act="edit" title="編集">✎</button>
+        <button class="delete" data-act="delete" title="削除">🗑</button>
+      </div>
+    </div>
+  `).join('');
+  tl.querySelectorAll('.tl-event').forEach(row => {
+    const id = row.dataset.id;
+    row.querySelector('[data-act="edit"]').onclick = () => editEvent(id);
+    row.querySelector('[data-act="delete"]').onclick = () => deleteEvent(id);
   });
 }
 
-//===================== Weight calc =====================
+function editEvent(id) {
+  const ev = entry.events.find(e => e.id === id);
+  if (!ev) return;
+  editingId = id;
+  openAddForm(ev.type, ev);
+  document.querySelector('section h2').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function deleteEvent(id) {
+  if (!confirm('この記録を削除しますか？')) return;
+  entry.events = entry.events.filter(e => e.id !== id);
+  if (editingId === id) cancelAddForm();
+  renderTimeline();
+  scheduleSave();
+}
+
+//===================== Aggregation for preview =====================
+function aggregate(events) {
+  const byType = { weight: [], mood: [], weather: [], check: [], meal: [], exercise: [] };
+  events.forEach(e => { if (byType[e.type]) byType[e.type].push(e); });
+  Object.values(byType).forEach(arr => arr.sort((a, b) => (a.time || '').localeCompare(b.time || '')));
+
+  // latest weight wins
+  const latestWeight = byType.weight.length ? byType.weight[byType.weight.length - 1].value : null;
+  // latest mood wins
+  const latestMood = byType.mood.length ? byType.mood[byType.mood.length - 1].value : '';
+  // latest weather wins
+  const latestWeather = byType.weather.length ? byType.weather[byType.weather.length - 1] : null;
+  // checks: presence = done
+  const checksDone = {};
+  byType.check.forEach(e => { checksDone[e.key] = true; });
+  // meals
+  const meals = byType.meal.map(e => ({
+    label: e.label || '',
+    text: e.text || '',
+    kcal: parseFloat(e.kcal)
+  }));
+  const mealTotal = meals.reduce((s, m) => s + (Number.isFinite(m.kcal) ? m.kcal : 0), 0);
+  // exercise
+  const exercises = byType.exercise.map(e => ({
+    name: e.name || '',
+    value: e.value || '',
+    kcal: parseFloat(e.kcal)
+  }));
+  const exerciseTotal = exercises.reduce((s, e) => s + (Number.isFinite(e.kcal) ? e.kcal : 0), 0);
+
+  return { latestWeight, latestMood, latestWeather, checksDone, meals, mealTotal, exercises, exerciseTotal };
+}
+
+function aggForDate(dateStr) {
+  const e = cache[dateStr];
+  if (!e || !Array.isArray(e.events)) return aggregate([]);
+  return aggregate(e.events);
+}
+
+//===================== Preview =====================
 function firstRecordedWeight() {
   const keys = Object.keys(cache).sort();
   for (const k of keys) {
-    const w = parseFloat(cache[k].weight);
+    const w = aggForDate(k).latestWeight;
     if (Number.isFinite(w)) return w;
   }
   return null;
 }
 
-function updateWeightCards() {
-  const w = parseFloat(entry.weight);
-  const goal = parseFloat(settings.goalWeight);
-
-  const today = document.getElementById('p_today');
-  const diffEl = document.getElementById('p_diff');
-  const togoal = document.getElementById('p_togoal');
-  const bar = document.getElementById('p_bar');
-
-  today.innerHTML = Number.isFinite(w) ? `${w.toFixed(1)}<span class="unit">kg</span>` : `—<span class="unit">kg</span>`;
-
-  const prev = cache[prevDateStr(currentDate)];
-  const pw = prev && parseFloat(prev.weight);
-  diffEl.classList.remove('up', 'down', 'flat');
-  if (Number.isFinite(w) && Number.isFinite(pw)) {
-    const d = w - pw;
-    const sign = d > 0 ? '+' : '';
-    diffEl.innerHTML = `${sign}${d.toFixed(1)}<span class="unit">kg</span>`;
-    diffEl.classList.add(d > 0.05 ? 'up' : d < -0.05 ? 'down' : 'flat');
-  } else {
-    diffEl.innerHTML = `—<span class="unit">kg</span>`;
-    diffEl.classList.add('flat');
-  }
-
-  if (Number.isFinite(w) && Number.isFinite(goal)) {
-    const remain = w - goal;
-    togoal.innerHTML = remain >= 0
-      ? `${remain.toFixed(1)}<span class="unit">kg</span>`
-      : '達成 🎉';
-    const start = firstRecordedWeight() ?? w;
-    if (start > goal) {
-      const pct = Math.max(0, Math.min(100, ((start - w) / (start - goal)) * 100));
-      bar.style.width = pct + '%';
-    } else {
-      bar.style.width = '100%';
-    }
-  } else {
-    togoal.innerHTML = `—<span class="unit">kg</span>`;
-    bar.style.width = '0%';
-  }
-}
-
-//===================== Preview =====================
-function escapeHtml(s) {
-  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-
-function lineItems(text) {
-  return String(text || '')
-    .split(/\r?\n/)
-    .map(l => l.replace(/^\s*[-・]\s*/, '').trim())
-    .filter(Boolean);
-}
-
 function renderPreview() {
   const body = document.getElementById('previewBody');
-  const w = parseFloat(entry.weight);
+  const agg = aggregate(entry.events);
+  const w = agg.latestWeight;
   const goal = parseFloat(settings.goalWeight);
-  const prev = cache[prevDateStr(currentDate)];
-  const pw = prev && parseFloat(prev.weight);
+  const pw = aggForDate(prevDateStr(currentDate)).latestWeight;
 
-  const moodLabel = { good: '😊 にこにこ', normal: '😐 ふつう', bad: '😞 わるい' }[entry.mood] || '—';
-
-  let diffHtml = '—';
-  let diffClass = 'flat';
+  let diffHtml = '—', diffClass = 'flat';
   if (Number.isFinite(w) && Number.isFinite(pw)) {
     const d = w - pw;
     const sign = d > 0 ? '+' : '';
@@ -812,25 +1129,29 @@ function renderPreview() {
     else if (start > goal) pct = Math.max(0, Math.min(100, ((start - w) / (start - goal)) * 100));
   }
 
-  const checkLabels = {
-    stretch: 'ストレッチ', strength: '筋トレ', cardio: '有酸素運動',
-    water: '水2L飲む', noSnack: '間食なし'
-  };
-  const checksHtml = Object.keys(checkLabels).map(k =>
-    `<span class="chip ${entry.checks[k] ? 'on' : ''}">${entry.checks[k] ? '✓ ' : ''}${checkLabels[k]}</span>`
+  const moodLabel = MOOD_LABELS[agg.latestMood] || '—';
+  const weatherStr = agg.latestWeather
+    ? `${escapeHtml(agg.latestWeather.weather || '—')}`
+    : '—';
+  const tempStr = agg.latestWeather && agg.latestWeather.temp !== '' && Number.isFinite(parseFloat(agg.latestWeather.temp))
+    ? `${parseFloat(agg.latestWeather.temp)}°C`
+    : '—';
+
+  const checksHtml = Object.entries(CHECK_LABELS).map(([k, l]) =>
+    `<span class="chip ${agg.checksDone[k] ? 'on' : ''}">${agg.checksDone[k] ? '✓ ' : ''}${l}</span>`
   ).join('');
 
-  const mealItems = lineItems(entry.meals);
-  const mealsHtml = mealItems.length
-    ? mealItems.map(l => `<li>${escapeHtml(l)}</li>`).join('')
+  const mealsHtml = agg.meals.length
+    ? agg.meals.map(m =>
+        `<li><span><span class="tag">${escapeHtml(m.label)}</span>${escapeHtml(m.text)}</span><span>${Number.isFinite(m.kcal) ? m.kcal.toLocaleString() + ' kcal' : ''}</span></li>`
+      ).join('')
     : '<li style="color:var(--ink-soft)">記録なし</li>';
-  const mealTotal = parseFloat(entry.mealTotal);
 
-  const exItems = lineItems(entry.exercise);
-  const exHtml = exItems.length
-    ? exItems.map(l => `<li>${escapeHtml(l)}</li>`).join('')
+  const exHtml = agg.exercises.length
+    ? agg.exercises.map(e =>
+        `<li><span>${escapeHtml(e.name)}${e.value ? ' <span style="color:var(--ink-soft)">' + escapeHtml(e.value) + '</span>' : ''}</span><span>${Number.isFinite(e.kcal) ? e.kcal.toLocaleString() + ' kcal' : ''}</span></li>`
+      ).join('')
     : '<li style="color:var(--ink-soft)">記録なし</li>';
-  const exTotal = parseFloat(entry.exerciseTotal);
 
   body.innerHTML = `
     <div class="top-info">
@@ -841,8 +1162,8 @@ function renderPreview() {
 
     <h2>今日の情報</h2>
     <div class="info-grid">
-      <div class="row"><span>天気</span><span>${escapeHtml(entry.weather || '—')}</span></div>
-      <div class="row"><span>気温</span><span>${entry.temp !== '' && entry.temp != null ? escapeHtml(entry.temp) + '°C' : '—'}</span></div>
+      <div class="row"><span>天気</span><span>${weatherStr}</span></div>
+      <div class="row"><span>気温</span><span>${tempStr}</span></div>
       <div class="row"><span>気分</span><span>${moodLabel}</span></div>
     </div>
 
@@ -868,11 +1189,11 @@ function renderPreview() {
 
     <h2 style="margin-top:18px">食事</h2>
     <ul class="meal-list">${mealsHtml}</ul>
-    ${Number.isFinite(mealTotal) ? `<div class="total">トータル <span class="num">${mealTotal.toLocaleString()}</span> kcal</div>` : ''}
+    ${agg.mealTotal > 0 ? `<div class="total">トータル <span class="num">${agg.mealTotal.toLocaleString()}</span> kcal</div>` : ''}
 
     <h2 style="margin-top:18px">運動</h2>
     <ul class="ex-list">${exHtml}</ul>
-    ${Number.isFinite(exTotal) ? `<div class="total">総消費カロリー <span class="num">${exTotal.toLocaleString()}</span> kcal</div>` : ''}
+    ${agg.exerciseTotal > 0 ? `<div class="total">総消費カロリー <span class="num">${agg.exerciseTotal.toLocaleString()}</span> kcal</div>` : ''}
 
     <footer>WEIGHT GOAL · ${Number.isFinite(goal) ? goal.toFixed(1) : '—'} KG</footer>
   `;
@@ -881,24 +1202,23 @@ function renderPreview() {
 //===================== History =====================
 function renderHistory() {
   const list = document.getElementById('historyList');
-  const keys = Object.keys(cache).sort().reverse();
+  const keys = Object.keys(cache).filter(k => Array.isArray(cache[k].events) && cache[k].events.length > 0).sort().reverse();
   if (keys.length === 0) {
     list.innerHTML = '<div style="color:var(--ink-soft);font-size:13px">まだ記録がありません。</div>';
     return;
   }
   list.innerHTML = keys.map(k => {
-    const e = cache[k];
-    const w = parseFloat(e.weight);
-    const t = parseFloat(e.mealTotal);
+    const a = aggForDate(k);
+    const w = a.latestWeight;
     return `<div class="history-item" data-date="${k}">
       <span class="date">${k} <span style="color:var(--ink-soft);font-size:11px;margin-left:6px">${dayJa(k)}</span></span>
-      <span class="meta">${Number.isFinite(w) ? w.toFixed(1) + 'kg' : '—'}${Number.isFinite(t) ? ' · ' + t.toLocaleString() + ' kcal' : ''}</span>
+      <span class="meta">${cache[k].events.length}件${Number.isFinite(w) ? ' · ' + w.toFixed(1) + 'kg' : ''}${a.mealTotal ? ' · ' + a.mealTotal.toLocaleString() + ' kcal' : ''}</span>
     </div>`;
   }).join('');
   list.querySelectorAll('.history-item').forEach(el => {
     el.onclick = () => {
       loadEntry(el.dataset.date);
-      switchTab('edit');
+      switchTab('timeline');
     };
   });
 }
@@ -921,7 +1241,7 @@ function switchTab(name) {
   document.querySelectorAll('.tabs button').forEach(b => {
     b.classList.toggle('active', b.dataset.tab === name);
   });
-  ['edit', 'preview', 'history', 'settings'].forEach(t => {
+  ['timeline', 'preview', 'history', 'settings'].forEach(t => {
     document.getElementById('tab-' + t).classList.toggle('hide', t !== name);
   });
   if (name === 'preview') renderPreview();
@@ -937,37 +1257,19 @@ function bindInputs() {
   document.getElementById('dateInput').onchange = e => loadEntry(e.target.value);
   document.getElementById('todayBtn').onclick = () => loadEntry(todayStr());
 
-  document.getElementById('f_weather').oninput = e => { entry.weather = e.target.value; scheduleSave(); };
-  document.getElementById('f_temp').oninput    = e => { entry.temp = e.target.value; scheduleSave(); };
-  document.getElementById('f_weight').oninput  = e => {
-    entry.weight = e.target.value;
-    updateWeightCards();
-    scheduleSave();
-  };
   document.getElementById('f_goal').oninput = e => {
     settings.goalWeight = e.target.value;
     saveSettings();
-    updateWeightCards();
   };
-  document.getElementById('f_meals').oninput = e => { entry.meals = e.target.value; scheduleSave(); };
-  document.getElementById('f_meal_total').oninput = e => { entry.mealTotal = e.target.value; scheduleSave(); };
-  document.getElementById('f_ex').oninput = e => { entry.exercise = e.target.value; scheduleSave(); };
-  document.getElementById('f_ex_total').oninput = e => { entry.exerciseTotal = e.target.value; scheduleSave(); };
 
-  document.querySelectorAll('#moodPicker .mood').forEach(el => {
-    el.onclick = () => {
-      entry.mood = el.dataset.mood;
-      document.querySelectorAll('#moodPicker .mood').forEach(m =>
-        m.classList.toggle('selected', m.dataset.mood === entry.mood));
-      scheduleSave();
-    };
-  });
-
-  document.querySelectorAll('#checkList input[type=checkbox]').forEach(cb => {
-    cb.onchange = () => {
-      entry.checks[cb.dataset.key] = cb.checked;
-      cb.closest('li').classList.toggle('done', cb.checked);
-      scheduleSave();
+  document.querySelectorAll('#addChips .add-chip').forEach(chip => {
+    chip.onclick = () => {
+      if (activeAddType === chip.dataset.type && !editingId) {
+        cancelAddForm();
+      } else {
+        editingId = null;
+        openAddForm(chip.dataset.type);
+      }
     };
   });
 
@@ -977,7 +1279,7 @@ function bindInputs() {
       document.getElementById('banner').classList.add('hide');
       renderStorageInfo();
       renderHistory();
-      updateWeightCards();
+      loadEntry(currentDate);
       setStatus('フォルダ接続 ✓');
     }
   };
