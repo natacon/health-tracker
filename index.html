@@ -773,6 +773,91 @@ function loadEntry(date) {
   document.getElementById('dateInput').value = currentDate;
   document.getElementById('f_goal').value = settings.goalWeight ?? '';
   renderTimeline();
+  autoFetchWeatherIfNeeded();
+}
+
+//===================== Weather (Open-Meteo, Tokyo) =====================
+const TOKYO_LAT = 35.6762, TOKYO_LON = 139.6503;
+const AUTO_WEATHER_FLAG_KEY = 'health-tracker-auto-weather-date';
+
+const WMO_LABELS = {
+  0: '☀️ 快晴',
+  1: '🌤 ほぼ晴れ',
+  2: '⛅ 薄曇り',
+  3: '☁️ 曇り',
+  45: '🌫 霧', 48: '🌫 着氷性の霧',
+  51: '🌦 弱い霧雨', 53: '🌦 霧雨', 55: '🌧 強い霧雨',
+  56: '🌨 弱い着氷性霧雨', 57: '🌨 着氷性霧雨',
+  61: '🌧 弱い雨', 63: '🌧 雨', 65: '🌧 強い雨',
+  66: '🌨 弱い着氷性の雨', 67: '🌨 着氷性の雨',
+  71: '❄️ 弱い雪', 73: '❄️ 雪', 75: '❄️ 強い雪',
+  77: '🌨 霧雪',
+  80: '🌧 にわか雨', 81: '🌧 強いにわか雨', 82: '⛈ 激しいにわか雨',
+  85: '🌨 にわか雪', 86: '🌨 強いにわか雪',
+  95: '⛈ 雷雨', 96: '⛈ 雹を伴う雷雨', 99: '⛈ 強い雹を伴う雷雨'
+};
+function weatherCodeToLabel(code) { return WMO_LABELS[code] || '—'; }
+
+async function fetchTokyoWeather() {
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${TOKYO_LAT}&longitude=${TOKYO_LON}&current=temperature_2m,weather_code&timezone=Asia/Tokyo`;
+  const resp = await fetch(url, { cache: 'no-store' });
+  if (!resp.ok) throw new Error(`weather HTTP ${resp.status}`);
+  const data = await resp.json();
+  if (!data.current) throw new Error('no current data');
+  return {
+    label: weatherCodeToLabel(data.current.weather_code),
+    temp: data.current.temperature_2m
+  };
+}
+
+async function logCurrentWeather() {
+  const targetDate = currentDate;
+  setStatus('天気取得中…');
+  try {
+    const w = await fetchTokyoWeather();
+    if (currentDate !== targetDate) return false;
+    entry.events.push({
+      id: uid(),
+      time: nowTimeForDate(currentDate),
+      type: 'weather',
+      weather: w.label,
+      temp: w.temp,
+      source: 'open-meteo:tokyo'
+    });
+    renderTimeline();
+    scheduleSave();
+    setStatus('天気を記録 ✓');
+    return true;
+  } catch (e) {
+    console.warn('Weather fetch failed:', e);
+    setStatus('天気取得失敗');
+    return false;
+  }
+}
+
+async function autoFetchWeatherIfNeeded() {
+  if (currentDate !== todayStr()) return;
+  if (localStorage.getItem(AUTO_WEATHER_FLAG_KEY) === todayStr()) return;
+  if (entry.events.some(e => e.type === 'weather')) return;
+  const targetDate = currentDate;
+  try {
+    const w = await fetchTokyoWeather();
+    if (currentDate !== targetDate) return;
+    if (entry.events.some(e => e.type === 'weather')) return;
+    entry.events.push({
+      id: uid(),
+      time: nowTimeForDate(currentDate),
+      type: 'weather',
+      weather: w.label,
+      temp: w.temp,
+      source: 'open-meteo:tokyo'
+    });
+    localStorage.setItem(AUTO_WEATHER_FLAG_KEY, todayStr());
+    renderTimeline();
+    scheduleSave();
+  } catch (e) {
+    console.warn('Auto weather fetch failed:', e);
+  }
 }
 
 let saveTimer = null;
@@ -1232,6 +1317,11 @@ function bindInputs() {
 
   document.querySelectorAll('#addChips .add-chip').forEach(chip => {
     chip.onclick = () => {
+      if (chip.dataset.type === 'weather' && !editingId && currentDate === todayStr()) {
+        cancelAddForm();
+        logCurrentWeather();
+        return;
+      }
       if (activeAddType === chip.dataset.type && !editingId) {
         cancelAddForm();
       } else {
