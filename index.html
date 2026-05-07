@@ -361,6 +361,109 @@
 
   .hide { display: none !important; }
 
+  /* ---------- Favorites ---------- */
+  .fav-row {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px dashed var(--line);
+  }
+  .fav-chip {
+    position: relative;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 24px 6px 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid var(--line);
+    font-size: 12px;
+    cursor: pointer;
+    max-width: 100%;
+  }
+  .fav-chip:hover { border-color: var(--accent); transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+  .fav-chip > span:not(.fav-tag):not(.fav-del):not(.fav-thumb) {
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    max-width: 220px;
+  }
+  .fav-chip .fav-tag {
+    background: var(--accent); color: #fff;
+    font-size: 10px; font-weight: 700;
+    padding: 2px 6px; border-radius: 4px;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+  }
+  .fav-chip .fav-thumb {
+    width: 36px; height: 22px;
+    object-fit: cover; border-radius: 3px;
+    flex-shrink: 0;
+  }
+  .fav-chip .fav-del {
+    position: absolute;
+    right: 4px; top: 50%; transform: translateY(-50%);
+    width: 18px; height: 18px;
+    line-height: 16px; text-align: center;
+    border-radius: 50%;
+    color: var(--ink-faint);
+    font-size: 14px;
+  }
+  .fav-chip .fav-del:hover { background: rgba(0, 0, 0, 0.08); color: var(--bad); }
+  .fav-row-empty {
+    font-size: 11px; color: var(--ink-faint);
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px dashed var(--line);
+  }
+
+  /* ---------- Exercise URL/thumbnail ---------- */
+  .tl-event .body .ex-thumb {
+    display: inline-block; vertical-align: middle;
+    margin-right: 8px;
+  }
+  .tl-event .body .ex-thumb img {
+    width: 80px; height: 45px;
+    object-fit: cover; border-radius: 4px;
+    display: block;
+  }
+  .tl-event .body .ex-link {
+    margin-left: 6px; color: var(--ink-soft);
+    text-decoration: none;
+  }
+  .tl-event .body .ex-link:hover { color: var(--accent); }
+
+  .thumb-preview { margin-top: 6px; }
+  .thumb-preview img {
+    max-width: 220px; height: auto;
+    border-radius: 6px;
+    border: 1px solid var(--line);
+  }
+
+  /* ---------- Settings: fav list ---------- */
+  .fav-list-group { font-size: 12px; color: var(--ink-soft); margin: 12px 0 6px; letter-spacing: 0.05em; }
+  .fav-list-item {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.5);
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
+  .fav-list-item .info { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; }
+  .fav-list-item .info img {
+    width: 48px; height: 27px;
+    object-fit: cover; border-radius: 3px;
+    flex-shrink: 0;
+  }
+  .fav-list-item .info > span:last-child {
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .fav-list-item .fav-tag {
+    background: var(--accent); color: #fff;
+    font-size: 10px; font-weight: 700;
+    padding: 2px 6px; border-radius: 4px;
+    flex-shrink: 0;
+  }
+
   @media (max-width: 480px) {
     .weight-grid { grid-template-columns: 1fr; }
     .add-chip { flex: 1 0 calc(33.33% - 8px); }
@@ -429,6 +532,15 @@
     </section>
 
     <section>
+      <h2>★ いつものリスト</h2>
+      <div id="favListBody"></div>
+      <p style="font-size:12px;color:var(--ink-soft);margin-top:14px">
+        食事や運動の追加フォームから「★いつもの」ボタンで登録すると、フォーム上部のチップから次回ワンタップで記録できます。<br>
+        運動にYouTubeのURLを貼ると、サムネイルが自動表示されます。
+      </p>
+    </section>
+
+    <section>
       <h2>保存先</h2>
       <div class="storage-info" id="storageInfo">読み込み中…</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -473,7 +585,13 @@ const storage = {
   isPickerAvailable() { return 'showDirectoryPicker' in window; },
 
   async init() {
-    settings = Object.assign({ goalWeight: 46 }, JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'));
+    settings = Object.assign(
+      { goalWeight: 46, favorites: { meal: [], exercise: [] } },
+      JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}')
+    );
+    if (!settings.favorites || typeof settings.favorites !== 'object') settings.favorites = { meal: [], exercise: [] };
+    if (!Array.isArray(settings.favorites.meal)) settings.favorites.meal = [];
+    if (!Array.isArray(settings.favorites.exercise)) settings.favorites.exercise = [];
 
     if (this.isOpfsAvailable()) {
       try {
@@ -619,7 +737,7 @@ const storage = {
   }
 };
 
-let settings = { goalWeight: 46 };
+let settings = { goalWeight: 46, favorites: { meal: [], exercise: [] } };
 function saveSettings() {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
 }
@@ -741,6 +859,23 @@ let editingId = null; // id of event being edited (null if adding new)
 let activeAddType = null;
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+function youtubeId(url) {
+  if (!url || typeof url !== 'string') return null;
+  try {
+    const u = new URL(url);
+    if (u.hostname === 'youtu.be') return (u.pathname.slice(1).split('/')[0]) || null;
+    if (u.hostname.endsWith('youtube.com') || u.hostname.endsWith('youtube-nocookie.com')) {
+      if (u.pathname === '/watch') return u.searchParams.get('v');
+      const m = u.pathname.match(/^\/(?:embed|shorts|live|v)\/([^/?#]+)/);
+      if (m) return m[1];
+    }
+  } catch {}
+  return null;
+}
+function youtubeThumb(id) {
+  return `https://img.youtube.com/vi/${id}/mqdefault.jpg`;
+}
 
 function todayStr() {
   const d = new Date();
@@ -909,6 +1044,8 @@ function buildAddForm(type, prefill = null) {
       <div class="field"><label>種目</label><input type="text" data-f="name" placeholder="歩数 / YouTube など" value="${escapeHtml(prefill?.name ?? '')}"></div>
       <div class="field"><label>内容</label><input type="text" data-f="value" placeholder="8,420歩 / 20分" value="${escapeHtml(prefill?.value ?? '')}"></div>
       <div class="field"><label>消費kcal</label><input type="number" data-f="kcal" placeholder="200" value="${prefill?.kcal ?? ''}"><span class="unit">kcal</span></div>
+      <div class="field"><label>URL</label><input type="url" data-f="url" placeholder="YouTubeリンクなど" value="${escapeHtml(prefill?.url ?? '')}"></div>
+      <div class="thumb-preview" data-thumb-preview></div>
     `;
   } else if (type === 'mood') {
     inner = `
@@ -940,13 +1077,49 @@ function buildAddForm(type, prefill = null) {
     `;
   }
 
+  const showFavs = (type === 'meal' || type === 'exercise') && !editingId;
+  const favRow = showFavs ? buildFavoritesRow(type) : '';
+  const favBtn = showFavs ? `<button type="button" class="ghost" data-act="save-fav" title="この内容をいつものリストに登録">★ いつもの</button>` : '';
+
   return `
+    ${favRow}
     ${inner}
     <div class="actions">
       <button type="button" class="ghost" data-act="cancel">キャンセル</button>
+      ${favBtn}
       <button type="button" class="primary" data-act="save">${editingId ? '更新' : '追加'}</button>
     </div>
   `;
+}
+
+function buildFavoritesRow(type) {
+  const favs = (settings.favorites && settings.favorites[type]) || [];
+  if (favs.length === 0) {
+    return `<div class="fav-row-empty">★いつもの登録はまだありません。下の「★いつもの」で次回からワンタップ追加できます。</div>`;
+  }
+  const items = favs.map((f, i) => {
+    if (type === 'meal') {
+      const k = parseFloat(f.kcal);
+      const sub = Number.isFinite(k) ? ` ${k}kcal` : '';
+      return `<button type="button" class="fav-chip" data-fav-index="${i}" title="タップで追加">
+        <span class="fav-tag">${escapeHtml(f.label || '')}</span>
+        <span>${escapeHtml(f.text || '')}${sub}</span>
+        <span class="fav-del" data-fav-del="${i}" title="お気に入りから削除">×</span>
+      </button>`;
+    } else {
+      const id = youtubeId(f.url);
+      const thumb = id ? `<img class="fav-thumb" src="${youtubeThumb(id)}" alt="" loading="lazy">` : '';
+      const k = parseFloat(f.kcal);
+      const sub = Number.isFinite(k) ? ` ${k}kcal` : '';
+      const valuePart = f.value ? ` ${escapeHtml(f.value)}` : '';
+      return `<button type="button" class="fav-chip" data-fav-index="${i}" title="タップで追加">
+        ${thumb}
+        <span>${escapeHtml(f.name || '')}${valuePart}${sub}</span>
+        <span class="fav-del" data-fav-del="${i}" title="お気に入りから削除">×</span>
+      </button>`;
+    }
+  }).join('');
+  return `<div class="fav-row">${items}</div>`;
 }
 
 function openAddForm(type, prefill = null) {
@@ -975,6 +1148,116 @@ function openAddForm(type, prefill = null) {
 
   form.querySelector('[data-act="cancel"]').onclick = cancelAddForm;
   form.querySelector('[data-act="save"]').onclick = saveAddForm;
+  const favSaveBtn = form.querySelector('[data-act="save-fav"]');
+  if (favSaveBtn) favSaveBtn.onclick = saveFavoriteFromForm;
+
+  bindFavChips(type);
+
+  // URL → YouTubeサムネ即時プレビュー
+  const urlInput = form.querySelector('[data-f="url"]');
+  const thumbDiv = form.querySelector('[data-thumb-preview]');
+  if (urlInput && thumbDiv) {
+    const updateThumb = () => {
+      const id = youtubeId(urlInput.value);
+      thumbDiv.innerHTML = id
+        ? `<img src="${youtubeThumb(id)}" alt="" loading="lazy">`
+        : '';
+    };
+    urlInput.addEventListener('input', updateThumb);
+    updateThumb();
+  }
+}
+
+function bindFavChips(type) {
+  const form = document.getElementById('addForm');
+  form.querySelectorAll('.fav-chip').forEach(chip => {
+    chip.onclick = (ev) => {
+      if (ev.target.classList.contains('fav-del')) {
+        ev.stopPropagation();
+        const i = parseInt(ev.target.dataset.favDel, 10);
+        if (Number.isFinite(i)) {
+          settings.favorites[type].splice(i, 1);
+          saveSettings();
+          refreshFavRow(type);
+        }
+        return;
+      }
+      const i = parseInt(chip.dataset.favIndex, 10);
+      if (Number.isFinite(i)) addEventFromFavorite(type, i);
+    };
+  });
+}
+
+function refreshFavRow(type) {
+  const form = document.getElementById('addForm');
+  const oldRow = form.querySelector('.fav-row, .fav-row-empty');
+  if (!oldRow) return;
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = buildFavoritesRow(type);
+  const newRow = wrapper.firstElementChild;
+  if (newRow) {
+    oldRow.replaceWith(newRow);
+    bindFavChips(type);
+  }
+}
+
+function addEventFromFavorite(type, i) {
+  const fav = settings.favorites[type] && settings.favorites[type][i];
+  if (!fav) return;
+  const time = nowTimeForDate(currentDate);
+  const ev = { id: uid(), time, type };
+  if (type === 'meal') {
+    ev.label = fav.label;
+    ev.text = fav.text;
+    ev.kcal = fav.kcal;
+  } else {
+    ev.name = fav.name;
+    ev.value = fav.value;
+    ev.kcal = fav.kcal;
+    if (fav.url) ev.url = fav.url;
+  }
+  entry.events.push(ev);
+  cancelAddForm();
+  renderTimeline();
+  scheduleSave();
+  setStatus('追加 ✓');
+}
+
+function saveFavoriteFromForm() {
+  if (!activeAddType) return;
+  const form = document.getElementById('addForm');
+  const get = name => {
+    const el = form.querySelector(`[data-f="${name}"]`);
+    return el ? el.value : '';
+  };
+  const getSeg = name => {
+    const el = form.querySelector(`[data-seg="${name}"] button.on`);
+    return el ? el.dataset.val : '';
+  };
+  const fav = {};
+  if (activeAddType === 'meal') {
+    fav.label = getSeg('label');
+    fav.text = get('text').trim();
+    const k = get('kcal');
+    fav.kcal = k === '' ? '' : parseFloat(k);
+    if (!fav.label) { alert('区分を選んでください'); return; }
+    if (!fav.text) { alert('内容を入力してください'); return; }
+  } else if (activeAddType === 'exercise') {
+    fav.name = get('name').trim();
+    fav.value = get('value').trim();
+    const k = get('kcal');
+    fav.kcal = k === '' ? '' : parseFloat(k);
+    fav.url = get('url').trim();
+    if (!fav.name) { alert('種目を入力してください'); return; }
+  } else {
+    return;
+  }
+  if (!settings.favorites) settings.favorites = { meal: [], exercise: [] };
+  if (!Array.isArray(settings.favorites[activeAddType])) settings.favorites[activeAddType] = [];
+  settings.favorites[activeAddType].push(fav);
+  saveSettings();
+  refreshFavRow(activeAddType);
+  setStatus('★いつもの に登録 ✓');
 }
 
 function cancelAddForm() {
@@ -1020,6 +1303,8 @@ function saveAddForm() {
     payload.value = get('value').trim();
     const kcal = get('kcal');
     payload.kcal = kcal === '' ? '' : parseFloat(kcal);
+    const url = get('url').trim();
+    if (url) payload.url = url;
   } else if (activeAddType === 'mood') {
     const v = getSeg('value');
     if (!v) { alert('気分を選んでください'); return; }
@@ -1074,7 +1359,10 @@ function eventBodyHtml(e) {
   }
   if (e.type === 'exercise') {
     const k = parseFloat(e.kcal);
-    return `<b>${escapeHtml(e.name || '')}</b>${e.value ? ` <span class="sub">${escapeHtml(e.value)}</span>` : ''}${Number.isFinite(k) ? ` <span class="kcal">${k.toLocaleString()} kcal</span>` : ''}`;
+    const id = youtubeId(e.url);
+    const thumb = id ? `<a href="${escapeHtml(e.url)}" target="_blank" rel="noopener" class="ex-thumb"><img src="${youtubeThumb(id)}" alt="" loading="lazy"></a>` : '';
+    const link = e.url && !id ? `<a href="${escapeHtml(e.url)}" target="_blank" rel="noopener" class="ex-link" title="${escapeHtml(e.url)}">🔗</a>` : '';
+    return `${thumb}<b>${escapeHtml(e.name || '')}</b>${e.value ? ` <span class="sub">${escapeHtml(e.value)}</span>` : ''}${Number.isFinite(k) ? ` <span class="kcal">${k.toLocaleString()} kcal</span>` : ''}${link}`;
   }
   if (e.type === 'mood') return `${MOOD_LABELS[e.value] || '—'}`;
   if (e.type === 'weather') {
@@ -1152,7 +1440,8 @@ function aggregate(events) {
   const exercises = byType.exercise.map(e => ({
     name: e.name || '',
     value: e.value || '',
-    kcal: parseFloat(e.kcal)
+    kcal: parseFloat(e.kcal),
+    url: e.url || ''
   }));
   const exerciseTotal = exercises.reduce((s, e) => s + (Number.isFinite(e.kcal) ? e.kcal : 0), 0);
 
@@ -1222,9 +1511,11 @@ function renderPreview() {
     : '<li style="color:var(--ink-soft)">記録なし</li>';
 
   const exHtml = agg.exercises.length
-    ? agg.exercises.map(e =>
-        `<li><span>${escapeHtml(e.name)}${e.value ? ' <span style="color:var(--ink-soft)">' + escapeHtml(e.value) + '</span>' : ''}</span><span>${Number.isFinite(e.kcal) ? e.kcal.toLocaleString() + ' kcal' : ''}</span></li>`
-      ).join('')
+    ? agg.exercises.map(e => {
+        const id = youtubeId(e.url);
+        const thumb = id ? `<img src="${youtubeThumb(id)}" alt="" loading="lazy" style="width:60px;height:34px;object-fit:cover;border-radius:3px;vertical-align:middle;margin-right:8px">` : '';
+        return `<li><span>${thumb}${escapeHtml(e.name)}${e.value ? ' <span style="color:var(--ink-soft)">' + escapeHtml(e.value) + '</span>' : ''}</span><span>${Number.isFinite(e.kcal) ? e.kcal.toLocaleString() + ' kcal' : ''}</span></li>`;
+      }).join('')
     : '<li style="color:var(--ink-soft)">記録なし</li>';
 
   body.innerHTML = `
@@ -1298,6 +1589,58 @@ function renderHistory() {
 }
 
 //===================== Settings UI =====================
+function renderFavList() {
+  const body = document.getElementById('favListBody');
+  if (!body) return;
+  const meals = (settings.favorites && settings.favorites.meal) || [];
+  const exes = (settings.favorites && settings.favorites.exercise) || [];
+  if (meals.length === 0 && exes.length === 0) {
+    body.innerHTML = '<div style="color:var(--ink-soft);font-size:13px">まだ登録がありません。</div>';
+    return;
+  }
+  let html = '';
+  if (meals.length) {
+    html += '<div class="fav-list-group">🍽 食事</div>';
+    html += meals.map((f, i) => {
+      const k = parseFloat(f.kcal);
+      const sub = Number.isFinite(k) ? ` · ${k}kcal` : '';
+      return `<div class="fav-list-item">
+        <div class="info"><span class="fav-tag">${escapeHtml(f.label || '')}</span><span>${escapeHtml(f.text || '')}${sub}</span></div>
+        <button class="ghost danger" data-fav-meal-del="${i}">削除</button>
+      </div>`;
+    }).join('');
+  }
+  if (exes.length) {
+    html += '<div class="fav-list-group">🏃 運動</div>';
+    html += exes.map((f, i) => {
+      const id = youtubeId(f.url);
+      const thumb = id ? `<img src="${youtubeThumb(id)}" alt="" loading="lazy">` : '';
+      const k = parseFloat(f.kcal);
+      const sub = Number.isFinite(k) ? ` · ${k}kcal` : '';
+      const valuePart = f.value ? ` · ${escapeHtml(f.value)}` : '';
+      return `<div class="fav-list-item">
+        <div class="info">${thumb}<span>${escapeHtml(f.name || '')}${valuePart}${sub}</span></div>
+        <button class="ghost danger" data-fav-ex-del="${i}">削除</button>
+      </div>`;
+    }).join('');
+  }
+  body.innerHTML = html;
+  body.querySelectorAll('[data-fav-meal-del]').forEach(b => {
+    b.onclick = () => {
+      settings.favorites.meal.splice(parseInt(b.dataset.favMealDel, 10), 1);
+      saveSettings();
+      renderFavList();
+    };
+  });
+  body.querySelectorAll('[data-fav-ex-del]').forEach(b => {
+    b.onclick = () => {
+      settings.favorites.exercise.splice(parseInt(b.dataset.favExDel, 10), 1);
+      saveSettings();
+      renderFavList();
+    };
+  });
+}
+
 function renderStorageInfo() {
   const el = document.getElementById('storageInfo');
   const count = Object.keys(cache).length;
@@ -1318,7 +1661,7 @@ function switchTab(name) {
   });
   if (name === 'preview') renderPreview();
   if (name === 'history') renderHistory();
-  if (name === 'settings') renderStorageInfo();
+  if (name === 'settings') { renderStorageInfo(); renderFavList(); }
 }
 document.querySelectorAll('.tabs button').forEach(b => {
   b.onclick = () => switchTab(b.dataset.tab);
@@ -1400,6 +1743,23 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+//===================== Share Target =====================
+function handleShareIntent() {
+  const params = new URLSearchParams(location.search);
+  const sharedUrl = params.get('url') || '';
+  const sharedText = params.get('text') || '';
+  const sharedTitle = params.get('title') || '';
+  if (!sharedUrl && !sharedText && !sharedTitle) return;
+  const urlMatch = sharedText.match(/https?:\/\/\S+/);
+  const url = sharedUrl || (urlMatch ? urlMatch[0] : '');
+  const cleanText = sharedText.replace(/https?:\/\/\S+/g, '').trim();
+  const name = sharedTitle || cleanText || '';
+  switchTab('timeline');
+  editingId = null;
+  openAddForm('exercise', { url, name });
+  history.replaceState({}, '', location.pathname);
+}
+
 //===================== Init =====================
 (async function init() {
   applyRandomBackground();
@@ -1409,6 +1769,7 @@ if ('serviceWorker' in navigator) {
   renderHistory();
   renderStorageInfo();
   setStatus(storage.mode === 'opfs' ? '準備完了' : '準備完了（localStorage）');
+  handleShareIntent();
 })();
 </script>
 </body>
