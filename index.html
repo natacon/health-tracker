@@ -436,6 +436,88 @@
     border: 1px solid var(--line);
   }
 
+  /* ---------- Image attachments ---------- */
+  .img-picker {
+    margin-top: 6px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .img-picker .img-add-btn {
+    align-self: flex-start;
+    padding: 8px 14px;
+    border: 1px dashed var(--line);
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .img-picker .img-add-btn:hover { border-color: var(--accent); border-style: solid; color: var(--accent); }
+  .img-picker .img-add-btn.disabled {
+    opacity: 0.5; cursor: not-allowed; pointer-events: none;
+  }
+  .img-strip {
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .img-strip.empty { display: none; }
+  .img-strip .img-item {
+    position: relative;
+    width: 72px; height: 72px;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    background: rgba(0,0,0,0.04);
+    flex-shrink: 0;
+  }
+  .img-strip .img-item img {
+    width: 100%; height: 100%;
+    object-fit: cover; display: block;
+    cursor: zoom-in;
+  }
+  .img-strip .img-item .img-remove {
+    position: absolute; top: 2px; right: 2px;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.6); color: #fff;
+    border: none; padding: 0; line-height: 1;
+    font-size: 14px; cursor: pointer;
+  }
+  .img-strip .img-item .img-remove:hover { background: var(--bad); transform: none; box-shadow: none; }
+  .img-strip.readonly .img-item img { cursor: zoom-in; }
+
+  .tl-event .body .img-strip { margin-top: 6px; }
+  .tl-event .body .img-strip .img-item { width: 60px; height: 60px; }
+
+  .preview .meal-list .img-strip,
+  .preview .ex-list .img-strip {
+    margin-top: 6px;
+  }
+  .preview .meal-list .img-strip .img-item,
+  .preview .ex-list .img-strip .img-item {
+    width: 64px; height: 64px;
+  }
+  .preview .meal-list li, .preview .ex-list li {
+    align-items: flex-start;
+  }
+  .preview .meal-list li > span:first-child,
+  .preview .ex-list li > span:first-child {
+    flex: 1; min-width: 0;
+  }
+
+  /* Lightbox */
+  .lightbox {
+    position: fixed; inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9999;
+    padding: 16px;
+    cursor: zoom-out;
+  }
+  .lightbox img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: 6px;
+  }
+
   /* ---------- Settings: fav list ---------- */
   .fav-list-group { font-size: 12px; color: var(--ink-soft); margin: 12px 0 6px; letter-spacing: 0.05em; }
   .fav-list-item {
@@ -600,6 +682,7 @@ const storage = {
         if (navigator.storage.persist) {
           try { await navigator.storage.persist(); } catch {}
         }
+        await imageStore.init(this.opfsRoot);
         await this.reloadFromOpfs();
 
         // one-time migration from legacy localStorage data
@@ -695,7 +778,25 @@ const storage = {
         n++;
       } catch (err) { console.warn(err); }
     }
-    return { count: n, name: handle.name };
+    let images = 0;
+    if (imageStore.available()) {
+      try {
+        const imgDir = await handle.getDirectoryHandle('images', { create: true });
+        const filenames = await imageStore.list();
+        for (const fname of filenames) {
+          try {
+            const blob = await imageStore.getBlob(fname);
+            if (!blob) continue;
+            const fh = await imgDir.getFileHandle(fname, { create: true });
+            const w = await fh.createWritable();
+            await w.write(blob);
+            await w.close();
+            images++;
+          } catch (err) { console.warn('image export failed', fname, err); }
+        }
+      } catch (err) { console.warn('images dir failed', err); }
+    }
+    return { count: n, images, name: handle.name };
   },
 
   async importFromFolder() {
@@ -712,7 +813,12 @@ const storage = {
       return null;
     }
     let n = 0, replaced = 0;
+    let imagesDirHandle = null;
     for await (const [name, fh] of handle.entries()) {
+      if (fh.kind === 'directory' && name === 'images') {
+        imagesDirHandle = fh;
+        continue;
+      }
       if (fh.kind !== 'file') continue;
       const m = name.match(/^(\d{4}-\d{2}-\d{2})\.json$/);
       if (!m) continue;
@@ -733,7 +839,18 @@ const storage = {
         n++;
       } catch (err) { console.warn(err); }
     }
-    return { count: n, replaced, name: handle.name };
+    let images = 0;
+    if (imagesDirHandle && imageStore.available()) {
+      for await (const [iname, ifh] of imagesDirHandle.entries()) {
+        if (ifh.kind !== 'file') continue;
+        try {
+          const blob = await ifh.getFile();
+          await imageStore.write(iname, blob);
+          images++;
+        } catch (err) { console.warn('image import failed', iname, err); }
+      }
+    }
+    return { count: n, replaced, images, name: handle.name };
   }
 };
 
@@ -741,6 +858,142 @@ let settings = { goalWeight: 46, favorites: { meal: [], exercise: [] } };
 function saveSettings() {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
 }
+
+//===================== Images (OPFS images/ subdir) =====================
+const IMAGES_DIR = 'images';
+const imageStore = {
+  ready: false,
+  dir: null,
+  urlCache: new Map(),
+
+  async init(opfsRoot) {
+    if (!opfsRoot) return;
+    try {
+      this.dir = await opfsRoot.getDirectoryHandle(IMAGES_DIR, { create: true });
+      this.ready = true;
+    } catch (e) {
+      console.warn('imageStore init failed', e);
+    }
+  },
+
+  available() { return this.ready && !!this.dir; },
+
+  async write(filename, blob) {
+    if (!this.dir) throw new Error('image store not ready');
+    const fh = await this.dir.getFileHandle(filename, { create: true });
+    const w = await fh.createWritable();
+    await w.write(blob);
+    await w.close();
+  },
+
+  async getBlob(filename) {
+    if (!this.dir) return null;
+    try {
+      const fh = await this.dir.getFileHandle(filename);
+      return await fh.getFile();
+    } catch { return null; }
+  },
+
+  async getUrl(filename) {
+    if (this.urlCache.has(filename)) return this.urlCache.get(filename);
+    const blob = await this.getBlob(filename);
+    if (!blob) return null;
+    const url = URL.createObjectURL(blob);
+    this.urlCache.set(filename, url);
+    return url;
+  },
+
+  async delete(filename) {
+    if (this.urlCache.has(filename)) {
+      URL.revokeObjectURL(this.urlCache.get(filename));
+      this.urlCache.delete(filename);
+    }
+    if (!this.dir) return;
+    try { await this.dir.removeEntry(filename); } catch {}
+  },
+
+  async deleteMany(filenames) {
+    for (const f of filenames || []) await this.delete(f);
+  },
+
+  async list() {
+    if (!this.dir) return [];
+    const out = [];
+    for await (const [name, fh] of this.dir.entries()) {
+      if (fh.kind === 'file') out.push(name);
+    }
+    return out;
+  }
+};
+
+async function compressImage(file, maxSize = 1280, quality = 0.85) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((resolve, reject) => {
+      const im = new Image();
+      im.onload = () => resolve(im);
+      im.onerror = reject;
+      im.src = url;
+    });
+    let { naturalWidth: width, naturalHeight: height } = img;
+    if (!width || !height) throw new Error('image has no dimensions');
+    if (width > maxSize || height > maxSize) {
+      const r = Math.min(maxSize / width, maxSize / height);
+      width = Math.round(width * r);
+      height = Math.round(height * r);
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = width; canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, width, height);
+    const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', quality));
+    if (!blob) throw new Error('canvas.toBlob returned null');
+    return blob;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+async function populateImageThumbnails(rootEl) {
+  if (!rootEl) return;
+  const targets = rootEl.querySelectorAll('img[data-img-src]');
+  await Promise.all(Array.from(targets).map(async img => {
+    const filename = img.dataset.imgSrc;
+    if (!filename) return;
+    const url = await imageStore.getUrl(filename);
+    if (url) {
+      img.src = url;
+      img.dataset.lightbox = '1';
+    } else {
+      img.alt = '画像が見つかりません';
+    }
+  }));
+}
+
+function imageStripHtml(filenames, opts = {}) {
+  const list = Array.isArray(filenames) ? filenames : [];
+  if (list.length === 0) return '';
+  const cls = 'img-strip readonly' + (opts.extraClass ? ' ' + opts.extraClass : '');
+  return `<div class="${cls}">${list.map(f =>
+    `<div class="img-item"><img data-img-src="${escapeHtml(f)}" alt="" loading="lazy"></div>`
+  ).join('')}</div>`;
+}
+
+function openLightbox(src) {
+  const lb = document.createElement('div');
+  lb.className = 'lightbox';
+  lb.innerHTML = `<img src="${src}" alt="">`;
+  lb.onclick = () => lb.remove();
+  document.body.appendChild(lb);
+}
+
+document.addEventListener('click', ev => {
+  const t = ev.target;
+  if (t && t.tagName === 'IMG' && t.dataset && t.dataset.lightbox === '1' && t.src) {
+    ev.preventDefault();
+    openLightbox(t.src);
+  }
+});
 
 //===================== Migration (old shape -> events) =====================
 function migrateEntry(old) {
@@ -857,6 +1110,10 @@ let currentDate = todayStr();
 let entry = { events: [] };
 let editingId = null; // id of event being edited (null if adding new)
 let activeAddType = null;
+// Form session image state: items are { filename, blob, tempUrl }.
+// - Existing (loaded from event): { filename: 'abc.jpg', blob: null, tempUrl: null }
+// - Newly picked (not yet saved): { filename: null, blob: <Blob>, tempUrl: 'blob:...' }
+let formImages = [];
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 
@@ -1037,6 +1294,7 @@ function buildAddForm(type, prefill = null) {
       </div>
       <div class="field"><label>内容</label><input type="text" data-f="text" placeholder="オートミール" value="${escapeHtml(prefill?.text ?? '')}"></div>
       <div class="field"><label>kcal</label><input type="number" data-f="kcal" placeholder="180" value="${prefill?.kcal ?? ''}"><span class="unit">kcal</span></div>
+      ${imagePickerHtml()}
     `;
   } else if (type === 'exercise') {
     inner = `
@@ -1046,6 +1304,7 @@ function buildAddForm(type, prefill = null) {
       <div class="field"><label>消費kcal</label><input type="number" data-f="kcal" placeholder="200" value="${prefill?.kcal ?? ''}"><span class="unit">kcal</span></div>
       <div class="field"><label>URL</label><input type="url" data-f="url" placeholder="YouTubeリンクなど" value="${escapeHtml(prefill?.url ?? '')}"></div>
       <div class="thumb-preview" data-thumb-preview></div>
+      ${imagePickerHtml()}
     `;
   } else if (type === 'mood') {
     inner = `
@@ -1092,6 +1351,23 @@ function buildAddForm(type, prefill = null) {
   `;
 }
 
+function imagePickerHtml() {
+  const ok = imageStore.available();
+  const btnLabel = ok ? '📷 写真を追加' : '📷 写真は非対応の保存先です';
+  const btnClass = 'img-add-btn' + (ok ? '' : ' disabled');
+  return `
+    <div class="field" style="align-items:flex-start"><label style="padding-top:8px">写真</label>
+      <div class="img-picker" style="flex:1">
+        <div class="img-strip" data-img-strip></div>
+        <label class="${btnClass}">
+          ${btnLabel}
+          <input type="file" accept="image/*" multiple data-img-input style="display:none" ${ok ? '' : 'disabled'}>
+        </label>
+      </div>
+    </div>
+  `;
+}
+
 function buildFavoritesRow(type) {
   const favs = (settings.favorites && settings.favorites[type]) || [];
   if (favs.length === 0) {
@@ -1124,12 +1400,18 @@ function buildFavoritesRow(type) {
 
 function openAddForm(type, prefill = null) {
   activeAddType = type;
+  resetFormImages();
+  if ((type === 'meal' || type === 'exercise') && Array.isArray(prefill?.images)) {
+    formImages = prefill.images.map(filename => ({ filename, blob: null, tempUrl: null }));
+  }
   const form = document.getElementById('addForm');
   form.classList.remove('hide');
   form.innerHTML = buildAddForm(type, prefill);
 
   document.querySelectorAll('#addChips .add-chip').forEach(c =>
     c.classList.toggle('active', c.dataset.type === type));
+
+  bindImagePicker(form);
 
   // bind seg buttons
   form.querySelectorAll('.seg').forEach(seg => {
@@ -1166,6 +1448,75 @@ function openAddForm(type, prefill = null) {
     urlInput.addEventListener('input', updateThumb);
     updateThumb();
   }
+}
+
+function resetFormImages() {
+  for (const item of formImages) {
+    if (item.tempUrl) URL.revokeObjectURL(item.tempUrl);
+  }
+  formImages = [];
+}
+
+async function renderFormImageStrip() {
+  const form = document.getElementById('addForm');
+  if (!form) return;
+  const strip = form.querySelector('[data-img-strip]');
+  if (!strip) return;
+  if (formImages.length === 0) {
+    strip.classList.add('empty');
+    strip.innerHTML = '';
+    return;
+  }
+  strip.classList.remove('empty');
+  const items = await Promise.all(formImages.map(async (item, i) => {
+    let src = item.tempUrl;
+    if (!src && item.filename) src = await imageStore.getUrl(item.filename);
+    return `<div class="img-item">
+      <img src="${src || ''}" alt="" data-lightbox="1">
+      <button type="button" class="img-remove" data-img-remove="${i}" title="削除">×</button>
+    </div>`;
+  }));
+  strip.innerHTML = items.join('');
+  strip.querySelectorAll('[data-img-remove]').forEach(btn => {
+    btn.onclick = ev => {
+      ev.stopPropagation();
+      const i = parseInt(btn.dataset.imgRemove, 10);
+      if (!Number.isFinite(i)) return;
+      const removed = formImages.splice(i, 1)[0];
+      if (removed && removed.tempUrl) URL.revokeObjectURL(removed.tempUrl);
+      renderFormImageStrip();
+    };
+  });
+}
+
+function bindImagePicker(form) {
+  const input = form.querySelector('[data-img-input]');
+  if (!input) return;
+  input.onchange = async ev => {
+    const files = Array.from(ev.target.files || []);
+    ev.target.value = '';
+    if (!imageStore.available()) {
+      alert('現在の保存先では画像を保存できません。');
+      return;
+    }
+    setStatus('画像を処理中…');
+    for (const f of files) {
+      if (!f.type.startsWith('image/')) continue;
+      try {
+        const blob = await compressImage(f);
+        formImages.push({
+          filename: null,
+          blob,
+          tempUrl: URL.createObjectURL(blob)
+        });
+      } catch (e) {
+        console.warn('compress failed', e);
+      }
+    }
+    setStatus('準備完了');
+    renderFormImageStrip();
+  };
+  renderFormImageStrip();
 }
 
 function bindFavChips(type) {
@@ -1263,13 +1614,40 @@ function saveFavoriteFromForm() {
 function cancelAddForm() {
   activeAddType = null;
   editingId = null;
+  resetFormImages();
   const form = document.getElementById('addForm');
   form.classList.add('hide');
   form.innerHTML = '';
   document.querySelectorAll('#addChips .add-chip').forEach(c => c.classList.remove('active'));
 }
 
-function saveAddForm() {
+async function commitFormImages(originalEvent) {
+  // Persist newly picked blobs to OPFS, return final filename list
+  // and clean up files that were attached to the original event but removed.
+  const finalFilenames = [];
+  for (const item of formImages) {
+    if (item.filename) {
+      finalFilenames.push(item.filename);
+    } else if (item.blob) {
+      const fname = `${uid()}.jpg`;
+      try {
+        await imageStore.write(fname, item.blob);
+        finalFilenames.push(fname);
+      } catch (e) {
+        console.warn('image write failed', e);
+      } finally {
+        if (item.tempUrl) URL.revokeObjectURL(item.tempUrl);
+      }
+    }
+  }
+  const original = (originalEvent && Array.isArray(originalEvent.images)) ? originalEvent.images : [];
+  const removed = original.filter(f => !finalFilenames.includes(f));
+  if (removed.length) await imageStore.deleteMany(removed);
+  formImages = [];
+  return finalFilenames;
+}
+
+async function saveAddForm() {
   const form = document.getElementById('addForm');
   const get = name => {
     const el = form.querySelector(`[data-f="${name}"]`);
@@ -1292,7 +1670,7 @@ function saveAddForm() {
     const text = get('text').trim();
     const kcal = get('kcal');
     if (!label) { alert('区分を選んでください'); return; }
-    if (!text && !kcal) { alert('内容またはkcalを入力してください'); return; }
+    if (!text && !kcal && formImages.length === 0) { alert('内容・kcal・写真のいずれかを入力してください'); return; }
     payload.label = label;
     payload.text = text;
     payload.kcal = kcal === '' ? '' : parseFloat(kcal);
@@ -1333,11 +1711,27 @@ function saveAddForm() {
     }
   }
 
+  // Persist images for meal/exercise BEFORE mutating event so we can roll back via originals
+  let original = null;
+  if (editingId) {
+    original = entry.events.find(e => e.id === editingId) || null;
+  }
+  if (activeAddType === 'meal' || activeAddType === 'exercise') {
+    const filenames = await commitFormImages(original);
+    payload.images = filenames; // always set (possibly empty) so edits drop removed images
+  }
+
   if (editingId) {
     const idx = entry.events.findIndex(e => e.id === editingId);
-    if (idx >= 0) entry.events[idx] = Object.assign({}, entry.events[idx], payload);
+    if (idx >= 0) {
+      const merged = Object.assign({}, entry.events[idx], payload);
+      if (Array.isArray(merged.images) && merged.images.length === 0) delete merged.images;
+      entry.events[idx] = merged;
+    }
   } else {
-    entry.events.push(Object.assign({ id: uid() }, payload));
+    const ev = Object.assign({ id: uid() }, payload);
+    if (Array.isArray(ev.images) && ev.images.length === 0) delete ev.images;
+    entry.events.push(ev);
   }
   cancelAddForm();
   renderTimeline();
@@ -1355,14 +1749,16 @@ function eventBodyHtml(e) {
   }
   if (e.type === 'meal') {
     const k = parseFloat(e.kcal);
-    return `<b>${escapeHtml(e.label || '')}</b> ${escapeHtml(e.text || '')}${Number.isFinite(k) ? ` <span class="kcal">${k.toLocaleString()} kcal</span>` : ''}`;
+    const main = `<b>${escapeHtml(e.label || '')}</b> ${escapeHtml(e.text || '')}${Number.isFinite(k) ? ` <span class="kcal">${k.toLocaleString()} kcal</span>` : ''}`;
+    return main + imageStripHtml(e.images);
   }
   if (e.type === 'exercise') {
     const k = parseFloat(e.kcal);
     const id = youtubeId(e.url);
     const thumb = id ? `<a href="${escapeHtml(e.url)}" target="_blank" rel="noopener" class="ex-thumb"><img src="${youtubeThumb(id)}" alt="" loading="lazy"></a>` : '';
     const link = e.url && !id ? `<a href="${escapeHtml(e.url)}" target="_blank" rel="noopener" class="ex-link" title="${escapeHtml(e.url)}">🔗</a>` : '';
-    return `${thumb}<b>${escapeHtml(e.name || '')}</b>${e.value ? ` <span class="sub">${escapeHtml(e.value)}</span>` : ''}${Number.isFinite(k) ? ` <span class="kcal">${k.toLocaleString()} kcal</span>` : ''}${link}`;
+    const main = `${thumb}<b>${escapeHtml(e.name || '')}</b>${e.value ? ` <span class="sub">${escapeHtml(e.value)}</span>` : ''}${Number.isFinite(k) ? ` <span class="kcal">${k.toLocaleString()} kcal</span>` : ''}${link}`;
+    return main + imageStripHtml(e.images);
   }
   if (e.type === 'mood') return `${MOOD_LABELS[e.value] || '—'}`;
   if (e.type === 'weather') {
@@ -1396,6 +1792,7 @@ function renderTimeline() {
     row.querySelector('[data-act="edit"]').onclick = () => editEvent(id);
     row.querySelector('[data-act="delete"]').onclick = () => deleteEvent(id);
   });
+  populateImageThumbnails(tl);
 }
 
 function editEvent(id) {
@@ -1406,12 +1803,16 @@ function editEvent(id) {
   document.querySelector('section h2').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function deleteEvent(id) {
+async function deleteEvent(id) {
   if (!confirm('この記録を削除しますか？')) return;
+  const target = entry.events.find(e => e.id === id);
   entry.events = entry.events.filter(e => e.id !== id);
   if (editingId === id) cancelAddForm();
   renderTimeline();
   scheduleSave();
+  if (target && Array.isArray(target.images) && target.images.length) {
+    await imageStore.deleteMany(target.images);
+  }
 }
 
 //===================== Aggregation for preview =====================
@@ -1433,7 +1834,8 @@ function aggregate(events) {
   const meals = byType.meal.map(e => ({
     label: e.label || '',
     text: e.text || '',
-    kcal: parseFloat(e.kcal)
+    kcal: parseFloat(e.kcal),
+    images: Array.isArray(e.images) ? e.images : []
   }));
   const mealTotal = meals.reduce((s, m) => s + (Number.isFinite(m.kcal) ? m.kcal : 0), 0);
   // exercise
@@ -1441,7 +1843,8 @@ function aggregate(events) {
     name: e.name || '',
     value: e.value || '',
     kcal: parseFloat(e.kcal),
-    url: e.url || ''
+    url: e.url || '',
+    images: Array.isArray(e.images) ? e.images : []
   }));
   const exerciseTotal = exercises.reduce((s, e) => s + (Number.isFinite(e.kcal) ? e.kcal : 0), 0);
 
@@ -1506,7 +1909,7 @@ function renderPreview() {
 
   const mealsHtml = agg.meals.length
     ? agg.meals.map(m =>
-        `<li><span><span class="tag">${escapeHtml(m.label)}</span>${escapeHtml(m.text)}</span><span>${Number.isFinite(m.kcal) ? m.kcal.toLocaleString() + ' kcal' : ''}</span></li>`
+        `<li><span><span class="tag">${escapeHtml(m.label)}</span>${escapeHtml(m.text)}${imageStripHtml(m.images)}</span><span>${Number.isFinite(m.kcal) ? m.kcal.toLocaleString() + ' kcal' : ''}</span></li>`
       ).join('')
     : '<li style="color:var(--ink-soft)">記録なし</li>';
 
@@ -1514,7 +1917,7 @@ function renderPreview() {
     ? agg.exercises.map(e => {
         const id = youtubeId(e.url);
         const thumb = id ? `<img src="${youtubeThumb(id)}" alt="" loading="lazy" style="width:60px;height:34px;object-fit:cover;border-radius:3px;vertical-align:middle;margin-right:8px">` : '';
-        return `<li><span>${thumb}${escapeHtml(e.name)}${e.value ? ' <span style="color:var(--ink-soft)">' + escapeHtml(e.value) + '</span>' : ''}</span><span>${Number.isFinite(e.kcal) ? e.kcal.toLocaleString() + ' kcal' : ''}</span></li>`;
+        return `<li><span>${thumb}${escapeHtml(e.name)}${e.value ? ' <span style="color:var(--ink-soft)">' + escapeHtml(e.value) + '</span>' : ''}${imageStripHtml(e.images)}</span><span>${Number.isFinite(e.kcal) ? e.kcal.toLocaleString() + ' kcal' : ''}</span></li>`;
       }).join('')
     : '<li style="color:var(--ink-soft)">記録なし</li>';
 
@@ -1562,6 +1965,7 @@ function renderPreview() {
 
     <footer>WEIGHT GOAL · ${Number.isFinite(goal) ? goal.toFixed(1) : '—'} KG</footer>
   `;
+  populateImageThumbnails(body);
 }
 
 //===================== History =====================
@@ -1692,7 +2096,8 @@ function bindInputs() {
     setStatus('書き出し中…');
     const r = await storage.exportToFolder();
     if (r) {
-      alert(`${r.count} 件を「${r.name}」に書き出しました。`);
+      const imgPart = r.images ? `、画像 ${r.images} 枚` : '';
+      alert(`${r.count} 件${imgPart}を「${r.name}」に書き出しました。`);
       setStatus('書き出し ✓');
     } else {
       setStatus(storage.mode === 'opfs' ? '準備完了' : '準備完了（localStorage）');
@@ -1702,7 +2107,8 @@ function bindInputs() {
     setStatus('取り込み中…');
     const r = await storage.importFromFolder();
     if (r) {
-      alert(`${r.count} 件を取り込みました${r.replaced ? `（うち${r.replaced}件は上書き）` : ''}。`);
+      const imgPart = r.images ? `、画像 ${r.images} 枚` : '';
+      alert(`${r.count} 件${imgPart}を取り込みました${r.replaced ? `（うち${r.replaced}件は上書き）` : ''}。`);
       setStatus('取り込み ✓');
       renderStorageInfo();
       renderHistory();
@@ -1714,7 +2120,12 @@ function bindInputs() {
 
   document.getElementById('clearDayBtn').onclick = async () => {
     if (!confirm(`${currentDate} のデータを消去しますか？`)) return;
+    const day = cache[currentDate];
+    const filenames = (day && Array.isArray(day.events))
+      ? day.events.flatMap(e => Array.isArray(e.images) ? e.images : [])
+      : [];
     await storage.delete(currentDate);
+    if (filenames.length) await imageStore.deleteMany(filenames);
     loadEntry(currentDate);
     renderHistory();
     setStatus('消去しました');
