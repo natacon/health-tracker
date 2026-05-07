@@ -927,14 +927,16 @@ function buildAddForm(type, prefill = null) {
       <div class="field"><label>気温</label><input type="number" data-f="temp" placeholder="22" value="${prefill?.temp ?? ''}"><span class="unit">°C</span></div>
     `;
   } else if (type === 'check') {
+    const isEditing = !!prefill;
     inner = `
       <div class="field"><label>時刻</label><input type="time" data-f="time" value="${time}"></div>
       <div class="field"><label>項目</label>
-        <div class="seg" data-seg="key" style="flex-direction:column;align-items:stretch">
+        <div class="seg" data-seg="key" data-multi="${isEditing ? 'false' : 'true'}" style="flex-direction:column;align-items:stretch">
           ${Object.entries(CHECK_LABELS).map(([k, l]) =>
             `<button type="button" class="${prefill?.key === k ? 'on' : ''}" data-val="${k}">${l}</button>`).join('')}
         </div>
       </div>
+      ${isEditing ? '' : '<div style="font-size:11px;color:var(--ink-soft);margin-top:4px">複数選択できます。同じ時刻でまとめて記録します。</div>'}
     `;
   }
 
@@ -958,10 +960,15 @@ function openAddForm(type, prefill = null) {
 
   // bind seg buttons
   form.querySelectorAll('.seg').forEach(seg => {
+    const multi = seg.dataset.multi === 'true';
     seg.querySelectorAll('button').forEach(b => {
       b.onclick = () => {
-        seg.querySelectorAll('button').forEach(x => x.classList.remove('on'));
-        b.classList.add('on');
+        if (multi) {
+          b.classList.toggle('on');
+        } else {
+          seg.querySelectorAll('button').forEach(x => x.classList.remove('on'));
+          b.classList.add('on');
+        }
       };
     });
   });
@@ -1023,9 +1030,22 @@ function saveAddForm() {
     payload.temp = t === '' ? '' : parseFloat(t);
     if (!payload.weather && payload.temp === '') { alert('天気か気温を入力してください'); return; }
   } else if (activeAddType === 'check') {
-    const key = getSeg('key');
-    if (!key) { alert('項目を選んでください'); return; }
-    payload.key = key;
+    if (editingId) {
+      const key = getSeg('key');
+      if (!key) { alert('項目を選んでください'); return; }
+      payload.key = key;
+    } else {
+      const seg = form.querySelector('[data-seg="key"]');
+      const selected = Array.from(seg.querySelectorAll('button.on')).map(b => b.dataset.val);
+      if (selected.length === 0) { alert('項目を1つ以上選んでください'); return; }
+      selected.forEach(key => {
+        entry.events.push({ id: uid(), time, type: 'check', key });
+      });
+      cancelAddForm();
+      renderTimeline();
+      scheduleSave();
+      return;
+    }
   }
 
   if (editingId) {
