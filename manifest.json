@@ -1,0 +1,26 @@
+{
+  "name": "Daily Health",
+  "short_name": "Health",
+  "description": "毎日の体重・気分・運動・食事を記録するシンプルなヘルストラッカー",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fdf6e3",
+  "theme_color": "#e85a71",
+  "lang": "ja",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

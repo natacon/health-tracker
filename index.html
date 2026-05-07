@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#e85a71">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>Daily Health</title>
+<style>
+  :root {
+    --ink: #2c2c2c;
+    --ink-soft: #5a5a5a;
+    --line: rgba(0, 0, 0, 0.08);
+    --card: rgba(255, 255, 255, 0.78);
+    --accent: #e85a71;
+    --ok: #2f9e6e;
+    --bad: #d54b5e;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0; padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+    color: var(--ink); line-height: 1.6;
+  }
+
+  body {
+    min-height: 100vh;
+    padding: 20px 16px calc(80px + env(safe-area-inset-bottom));
+    transition: background 0.4s ease;
+    background: linear-gradient(135deg, #fdf6e3 0%, #f5e6d3 100%);
+  }
+
+  .wrap { max-width: 760px; margin: 0 auto; }
+
+  .toolbar {
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+    background: var(--card);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+  }
+  .toolbar input[type="date"] {
+    padding: 6px 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font: inherit;
+    background: #fff;
+  }
+  .toolbar .spacer { flex: 1; }
+  .toolbar .status { font-size: 12px; color: var(--ink-soft); }
+
+  button, .btn {
+    border: 1px solid var(--line);
+    background: #fff;
+    padding: 7px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font: inherit; font-size: 13px;
+    transition: all 0.15s ease;
+  }
+  button:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+  button.ghost { background: transparent; }
+  button.danger:hover { background: #fef2f2; border-color: var(--bad); color: var(--bad); }
+
+  .banner {
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    color: #9a3412;
+    padding: 10px 14px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .banner .text { flex: 1; min-width: 200px; }
+  .banner button { font-size: 12px; padding: 6px 12px; }
+
+  .tabs {
+    display: flex; gap: 6px;
+    margin-bottom: 14px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    padding: 4px;
+    border-radius: 12px;
+  }
+  .tabs button {
+    flex: 1; background: transparent; border: none;
+    padding: 9px 12px; border-radius: 8px;
+    font-size: 13px; color: var(--ink-soft);
+  }
+  .tabs button.active {
+    background: #fff; color: var(--ink); font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+
+  section {
+    background: var(--card);
+    backdrop-filter: blur(8px);
+    border-radius: 16px;
+    padding: 18px 22px;
+    margin-bottom: 14px;
+    border: 1px solid var(--line);
+  }
+  section h2 {
+    margin: 0 0 14px;
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    font-weight: 600;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 8px;
+  }
+
+  .field {
+    display: flex; align-items: center; gap: 12px;
+    padding: 6px 0;
+  }
+  .field label { flex: 0 0 90px; font-size: 13px; color: var(--ink-soft); }
+  .field input[type="text"], .field input[type="number"] {
+    flex: 1; padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px; font: inherit; background: #fff;
+  }
+  .field .unit { font-size: 13px; color: var(--ink-soft); }
+  .field-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 18px; }
+  .field-block textarea {
+    width: 100%; padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px; font: inherit; background: #fff;
+    resize: vertical; min-height: 90px;
+    line-height: 1.6;
+  }
+
+  .moods { display: flex; gap: 8px; margin-top: 6px; }
+  .mood {
+    flex: 1; text-align: center; padding: 10px 0;
+    border-radius: 10px; font-size: 13px;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.6);
+    cursor: pointer; user-select: none;
+    transition: all 0.15s ease;
+  }
+  .mood:hover { transform: translateY(-1px); }
+  .mood.selected {
+    background: var(--accent); color: #fff;
+    border-color: var(--accent); font-weight: 600;
+  }
+
+  .weight-grid { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 10px; }
+  .weight-card {
+    text-align: center; padding: 12px 8px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid var(--line);
+  }
+  .weight-card .label {
+    font-size: 11px; letter-spacing: 0.1em;
+    color: var(--ink-soft); text-transform: uppercase;
+  }
+  .weight-card .value { font-size: 26px; font-weight: 700; margin-top: 4px; line-height: 1; }
+  .weight-card .unit { font-size: 12px; font-weight: 500; color: var(--ink-soft); margin-left: 2px; }
+  .weight-card .value.up    { color: var(--bad); }
+  .weight-card .value.down  { color: var(--ok); }
+  .weight-card .value.flat  { color: var(--ink-soft); }
+  .goal-bar {
+    height: 6px; border-radius: 3px;
+    background: rgba(0, 0, 0, 0.06);
+    overflow: hidden; margin-top: 12px;
+  }
+  .goal-bar > span {
+    display: block; height: 100%;
+    background: var(--accent); border-radius: 3px;
+    transition: width 0.3s ease;
+  }
+
+  ul.check { list-style: none; padding: 0; margin: 0; }
+  ul.check li {
+    display: flex; align-items: center; gap: 12px;
+    padding: 9px 4px;
+    border-bottom: 1px dashed var(--line);
+    font-size: 14px;
+  }
+  ul.check li:last-child { border-bottom: none; }
+  ul.check input[type="checkbox"] {
+    width: 18px; height: 18px;
+    accent-color: var(--accent); cursor: pointer;
+  }
+  ul.check li.done label {
+    text-decoration: line-through; color: var(--ink-soft);
+  }
+
+  /* Preview */
+  .preview .top-info { text-align: center; margin-bottom: 20px; }
+  .preview .top-info h1 {
+    margin: 0; font-size: 12px; letter-spacing: 0.2em;
+    color: var(--ink-soft); font-weight: 500; text-transform: uppercase;
+  }
+  .preview .top-info .date { font-size: 30px; font-weight: 700; margin-top: 6px; }
+  .preview .top-info .day { font-size: 13px; color: var(--ink-soft); }
+  .preview .info-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 18px;
+  }
+  .preview .info-grid .row { display: flex; justify-content: space-between; font-size: 14px; }
+  .preview .info-grid .row span:first-child { color: var(--ink-soft); }
+  .preview .info-grid .row span:last-child { font-weight: 600; }
+  .preview .meal-list, .preview .ex-list { list-style: none; padding: 0; margin: 0; }
+  .preview .meal-list li, .preview .ex-list li {
+    padding: 8px 0;
+    border-bottom: 1px dashed var(--line);
+    font-size: 14px;
+  }
+  .preview .meal-list li:last-child, .preview .ex-list li:last-child { border-bottom: none; }
+  .preview .total {
+    margin-top: 12px; text-align: right;
+    font-size: 13px; font-weight: 600;
+  }
+  .preview .total .num {
+    font-size: 22px; margin-left: 6px; color: var(--accent);
+  }
+  .preview footer {
+    text-align: center; margin-top: 24px;
+    font-size: 11px; color: var(--ink-soft); letter-spacing: 0.1em;
+  }
+  .preview .check-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+  .preview .chip {
+    padding: 6px 12px; border-radius: 999px;
+    font-size: 13px; border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.5);
+    color: var(--ink-soft);
+  }
+  .preview .chip.on {
+    background: var(--accent); color: #fff;
+    border-color: var(--accent); font-weight: 600;
+  }
+
+  /* History */
+  .history-list { display: flex; flex-direction: column; gap: 6px; }
+  .history-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.5);
+    font-size: 13px; cursor: pointer;
+  }
+  .history-item:hover { border-color: var(--accent); }
+  .history-item .date { font-weight: 600; }
+  .history-item .meta { color: var(--ink-soft); font-size: 12px; }
+
+  .hide { display: none !important; }
+
+  .storage-info {
+    font-size: 12px; color: var(--ink-soft);
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    word-break: break-all;
+  }
+  .storage-info b { color: var(--ink); }
+
+  @media (max-width: 480px) {
+    .field-grid-2 { grid-template-columns: 1fr; }
+    .weight-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Permission re-grant banner -->
+  <div class="banner hide" id="banner">
+    <span class="text">📁 前回選んだ保存フォルダへの接続を再開できます。</span>
+    <button class="primary" id="reconnectBtn">再接続</button>
+    <button class="ghost" id="dismissBannerBtn">あとで</button>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <input type="date" id="dateInput">
+    <button id="todayBtn" class="ghost">今日</button>
+    <span class="spacer"></span>
+    <span class="status" id="saveStatus">—</span>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button data-tab="edit" class="active">編集</button>
+    <button data-tab="preview">プレビュー</button>
+    <button data-tab="history">履歴</button>
+    <button data-tab="settings">設定</button>
+  </div>
+
+  <!-- ============ Edit Tab ============ -->
+  <div id="tab-edit">
+
+    <section>
+      <h2>今日の情報</h2>
+      <div class="field-grid-2">
+        <div class="field"><label>天気</label><input type="text" id="f_weather" placeholder="☀️ 晴れ"></div>
+        <div class="field"><label>気温</label><input type="number" id="f_temp" placeholder="22"><span class="unit">°C</span></div>
+      </div>
+      <div style="font-size:13px;color:var(--ink-soft);margin-top:10px">気分</div>
+      <div class="moods" id="moodPicker">
+        <div class="mood" data-mood="good">😊 にこにこ</div>
+        <div class="mood" data-mood="normal">😐 ふつう</div>
+        <div class="mood" data-mood="bad">😞 わるい</div>
+      </div>
+    </section>
+
+    <section>
+      <h2>体重</h2>
+      <div class="field-grid-2">
+        <div class="field"><label>今日</label><input type="number" step="0.1" id="f_weight" placeholder="48.2"><span class="unit">kg</span></div>
+      </div>
+      <div class="weight-grid" style="margin-top:14px">
+        <div class="weight-card">
+          <div class="label">今日</div>
+          <div class="value" id="p_today">—<span class="unit">kg</span></div>
+        </div>
+        <div class="weight-card">
+          <div class="label">前日比</div>
+          <div class="value flat" id="p_diff">—<span class="unit">kg</span></div>
+        </div>
+        <div class="weight-card">
+          <div class="label">目標まで</div>
+          <div class="value" id="p_togoal">—<span class="unit">kg</span></div>
+        </div>
+      </div>
+      <div class="goal-bar"><span id="p_bar" style="width:0%"></span></div>
+    </section>
+
+    <section>
+      <h2>出来たことチェック</h2>
+      <ul class="check" id="checkList">
+        <li><input type="checkbox" data-key="stretch" id="c_stretch"><label for="c_stretch">ストレッチ</label></li>
+        <li><input type="checkbox" data-key="strength" id="c_strength"><label for="c_strength">筋トレ</label></li>
+        <li><input type="checkbox" data-key="cardio" id="c_cardio"><label for="c_cardio">有酸素運動</label></li>
+        <li><input type="checkbox" data-key="water" id="c_water"><label for="c_water">水2L飲む</label></li>
+        <li><input type="checkbox" data-key="noSnack" id="c_noSnack"><label for="c_noSnack">間食なし</label></li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>食事（記録から貼り付け）</h2>
+      <div class="field-block">
+        <textarea id="f_meals" placeholder="朝: オートミール（180kcal）&#10;昼: サラダチキン＋玄米（420kcal）&#10;夜: 鮭・味噌汁・野菜（480kcal）"></textarea>
+      </div>
+      <div class="field" style="margin-top:8px">
+        <label>トータル</label>
+        <input type="number" id="f_meal_total" placeholder="1080"><span class="unit">kcal</span>
+      </div>
+    </section>
+
+    <section>
+      <h2>運動（記録から貼り付け）</h2>
+      <div class="field-block">
+        <textarea id="f_ex" placeholder="歩数: 8,420 歩&#10;YouTube（筋トレ）: 20分&#10;ストレッチ: 10分"></textarea>
+      </div>
+      <div class="field" style="margin-top:8px">
+        <label>消費kcal</label>
+        <input type="number" id="f_ex_total" placeholder="2150"><span class="unit">kcal</span>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- ============ Preview Tab ============ -->
+  <div id="tab-preview" class="hide">
+    <section class="preview" id="previewBody"></section>
+  </div>
+
+  <!-- ============ History Tab ============ -->
+  <div id="tab-history" class="hide">
+    <section>
+      <h2>これまでの記録</h2>
+      <div class="history-list" id="historyList"></div>
+    </section>
+  </div>
+
+  <!-- ============ Settings Tab ============ -->
+  <div id="tab-settings" class="hide">
+    <section>
+      <h2>目標</h2>
+      <div class="field"><label>目標体重</label><input type="number" step="0.1" id="f_goal" placeholder="46"><span class="unit">kg</span></div>
+    </section>
+
+    <section>
+      <h2>保存先</h2>
+      <div class="storage-info" id="storageInfo">読み込み中…</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button id="pickDirBtn" class="primary">📁 保存フォルダを選ぶ</button>
+        <button id="forgetDirBtn" class="ghost">フォルダ接続を解除</button>
+      </div>
+      <p style="font-size:12px;color:var(--ink-soft);margin-top:14px">
+        フォルダを選ぶと、その中に <code>YYYY-MM-DD.json</code> 形式でデータが保存されます。<br>
+        フォルダごとバックアップ・移動・別端末への持ち込みが可能です。<br>
+        フォルダ未選択の場合、データはこのブラウザの内部ストレージに保存されます（端末を変えると見えません）。
+      </p>
+    </section>
+
+    <section>
+      <h2>このページについて</h2>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button id="clearDayBtn" class="danger">この日のデータを消去</button>
+      </div>
+      <p style="font-size:12px;color:var(--ink-soft);margin-top:14px">
+        Daily Health · プレビュータブをスクショして共有できます。
+      </p>
+    </section>
+  </div>
+
+</div>
+
+<script>
+//===================== IndexedDB (for FS dirHandle) =====================
+function idbOpen() {
+  return new Promise((resolve, reject) => {
+    const r = indexedDB.open('health-tracker', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('kv');
+    r.onsuccess = () => resolve(r.result);
+    r.onerror = () => reject(r.error);
+  });
+}
+async function idbGet(key) {
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const r = db.transaction('kv').objectStore('kv').get(key);
+    r.onsuccess = () => resolve(r.result);
+    r.onerror = () => reject(r.error);
+  });
+}
+async function idbPut(key, value) {
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('kv', 'readwrite');
+    tx.objectStore('kv').put(value, key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+async function idbDel(key) {
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('kv', 'readwrite');
+    tx.objectStore('kv').delete(key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+//===================== Storage =====================
+const LS_KEY = 'health-tracker-v1';
+const SETTINGS_KEY = 'health-tracker-settings-v1';
+const cache = {}; // dateStr -> entry
+
+const storage = {
+  mode: 'local', // 'local' | 'fs'
+  dirHandle: null,
+
+  isFsAvailable() { return 'showDirectoryPicker' in window; },
+
+  async init() {
+    // load goal/settings
+    settings = Object.assign({ goalWeight: 46 }, JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'));
+
+    // try restore previously chosen directory
+    if (this.isFsAvailable()) {
+      try {
+        const h = await idbGet('dirHandle');
+        if (h) {
+          const perm = await h.queryPermission({ mode: 'readwrite' });
+          if (perm === 'granted') {
+            this.dirHandle = h;
+            this.mode = 'fs';
+            await this.reloadFromFs();
+            return;
+          } else if (perm === 'prompt') {
+            // need user gesture — show banner
+            this.dirHandle = h; // keep candidate
+            document.getElementById('banner').classList.remove('hide');
+          }
+        }
+      } catch (e) { console.warn(e); }
+    }
+
+    // fallback: load from localStorage
+    Object.assign(cache, JSON.parse(localStorage.getItem(LS_KEY) || '{}'));
+  },
+
+  async pickDirectory() {
+    if (!this.isFsAvailable()) {
+      alert('このブラウザはフォルダ選択に対応していません。\nChrome / Edge / Samsung Internet を試してください。');
+      return false;
+    }
+    let handle;
+    try {
+      handle = await window.showDirectoryPicker({ mode: 'readwrite', id: 'health-tracker' });
+    } catch (e) {
+      if (e && e.name === 'AbortError') return false;
+      alert('フォルダ選択に失敗: ' + e.message);
+      return false;
+    }
+    await idbPut('dirHandle', handle);
+    this.dirHandle = handle;
+
+    // migrate localStorage data into FS (don't overwrite existing files)
+    const local = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
+
+    this.mode = 'fs';
+    await this.reloadFromFs();
+
+    for (const [date, entry] of Object.entries(local)) {
+      if (!cache[date]) {
+        try { await this.writeFile(date, entry); cache[date] = entry; } catch {}
+      }
+    }
+    return true;
+  },
+
+  async reconnect() {
+    if (!this.dirHandle) return false;
+    try {
+      const perm = await this.dirHandle.requestPermission({ mode: 'readwrite' });
+      if (perm === 'granted') {
+        this.mode = 'fs';
+        await this.reloadFromFs();
+        return true;
+      }
+    } catch (e) { console.warn(e); }
+    return false;
+  },
+
+  async forgetDirectory() {
+    await idbDel('dirHandle');
+    this.dirHandle = null;
+    this.mode = 'local';
+    Object.keys(cache).forEach(k => delete cache[k]);
+    Object.assign(cache, JSON.parse(localStorage.getItem(LS_KEY) || '{}'));
+  },
+
+  async reloadFromFs() {
+    Object.keys(cache).forEach(k => delete cache[k]);
+    if (!this.dirHandle) return;
+    for await (const [name, fh] of this.dirHandle.entries()) {
+      if (fh.kind !== 'file') continue;
+      const m = name.match(/^(\d{4}-\d{2}-\d{2})\.json$/);
+      if (!m) continue;
+      try {
+        const file = await fh.getFile();
+        const text = await file.text();
+        cache[m[1]] = JSON.parse(text);
+      } catch {}
+    }
+  },
+
+  async writeFile(date, entry) {
+    const fh = await this.dirHandle.getFileHandle(`${date}.json`, { create: true });
+    const w = await fh.createWritable();
+    await w.write(JSON.stringify(entry, null, 2));
+    await w.close();
+  },
+
+  async save(date, entry) {
+    cache[date] = entry;
+    if (this.mode === 'fs') {
+      try {
+        await this.writeFile(date, entry);
+      } catch (e) {
+        // try to re-request permission
+        try {
+          const perm = await this.dirHandle.requestPermission({ mode: 'readwrite' });
+          if (perm === 'granted') {
+            await this.writeFile(date, entry);
+            return;
+          }
+        } catch {}
+        // fallback to local
+        const all = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
+        all[date] = entry;
+        localStorage.setItem(LS_KEY, JSON.stringify(all));
+        throw e;
+      }
+    } else {
+      const all = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
+      all[date] = entry;
+      localStorage.setItem(LS_KEY, JSON.stringify(all));
+    }
+  },
+
+  async delete(date) {
+    delete cache[date];
+    if (this.mode === 'fs') {
+      try { await this.dirHandle.removeEntry(`${date}.json`); } catch {}
+    } else {
+      const all = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
+      delete all[date];
+      localStorage.setItem(LS_KEY, JSON.stringify(all));
+    }
+  }
+};
+
+let settings = { goalWeight: 46 };
+function saveSettings() {
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+}
+
+//===================== State =====================
+let currentDate = todayStr();
+let entry = emptyEntry();
+
+function emptyEntry() {
+  return {
+    weather: '', temp: '', mood: '',
+    weight: '',
+    checks: { stretch: false, strength: false, cardio: false, water: false, noSnack: false },
+    meals: '', mealTotal: '',
+    exercise: '', exerciseTotal: ''
+  };
+}
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+function dayJa(dateStr) {
+  const days = ['日', '月', '火', '水', '木', '金', '土'];
+  const d = new Date(dateStr + 'T00:00:00');
+  return days[d.getDay()] + '曜日';
+}
+function prevDateStr(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() - 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function loadEntry(date) {
+  currentDate = date;
+  entry = cache[date] ? JSON.parse(JSON.stringify(cache[date])) : emptyEntry();
+  // back-compat: migrate older array-based shape
+  if (Array.isArray(entry.meals)) {
+    const lines = entry.meals.filter(m => m.text || m.kcal).map(m =>
+      `${m.time ? m.time + ': ' : ''}${m.text || ''}${m.kcal ? '（' + m.kcal + 'kcal）' : ''}`);
+    const total = entry.meals.reduce((s, m) => s + (parseFloat(m.kcal) || 0), 0);
+    entry.meals = lines.join('\n');
+    entry.mealTotal = total ? String(total) : '';
+  }
+  if (Array.isArray(entry.exercises)) {
+    const lines = entry.exercises.filter(e => e.name || e.value).map(e =>
+      `${e.name || ''}${e.value ? ': ' + e.value : ''}`);
+    const total = entry.exercises.reduce((s, e) => s + (parseFloat(e.kcal) || 0), 0);
+    entry.exercise = lines.join('\n');
+    entry.exerciseTotal = total ? String(total) : '';
+    delete entry.exercises;
+  }
+  if (entry.exercise === undefined) entry.exercise = '';
+  if (entry.exerciseTotal === undefined) entry.exerciseTotal = '';
+  if (typeof entry.meals !== 'string') entry.meals = '';
+  if (entry.mealTotal === undefined) entry.mealTotal = '';
+
+  renderForm();
+  updateWeightCards();
+}
+
+let saveTimer = null;
+function scheduleSave() {
+  setStatus('保存中…');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    try {
+      await storage.save(currentDate, entry);
+      setStatus(storage.mode === 'fs' ? '保存しました ✓ (ファイル)' : '保存しました ✓');
+      renderHistory();
+    } catch (e) {
+      setStatus('保存失敗 — ローカルに退避');
+    }
+  }, 250);
+}
+function setStatus(text) {
+  document.getElementById('saveStatus').textContent = text;
+}
+
+//===================== Render Form =====================
+function renderForm() {
+  document.getElementById('dateInput').value = currentDate;
+  document.getElementById('f_weather').value = entry.weather || '';
+  document.getElementById('f_temp').value = entry.temp ?? '';
+  document.getElementById('f_weight').value = entry.weight ?? '';
+  document.getElementById('f_goal').value = settings.goalWeight ?? '';
+  document.getElementById('f_meals').value = entry.meals || '';
+  document.getElementById('f_meal_total').value = entry.mealTotal ?? '';
+  document.getElementById('f_ex').value = entry.exercise || '';
+  document.getElementById('f_ex_total').value = entry.exerciseTotal ?? '';
+
+  document.querySelectorAll('#moodPicker .mood').forEach(el => {
+    el.classList.toggle('selected', el.dataset.mood === entry.mood);
+  });
+
+  Object.keys(entry.checks).forEach(k => {
+    const cb = document.querySelector(`#checkList input[data-key="${k}"]`);
+    if (cb) {
+      cb.checked = !!entry.checks[k];
+      cb.closest('li').classList.toggle('done', cb.checked);
+    }
+  });
+}
+
+//===================== Weight calc =====================
+function firstRecordedWeight() {
+  const keys = Object.keys(cache).sort();
+  for (const k of keys) {
+    const w = parseFloat(cache[k].weight);
+    if (Number.isFinite(w)) return w;
+  }
+  return null;
+}
+
+function updateWeightCards() {
+  const w = parseFloat(entry.weight);
+  const goal = parseFloat(settings.goalWeight);
+
+  const today = document.getElementById('p_today');
+  const diffEl = document.getElementById('p_diff');
+  const togoal = document.getElementById('p_togoal');
+  const bar = document.getElementById('p_bar');
+
+  today.innerHTML = Number.isFinite(w) ? `${w.toFixed(1)}<span class="unit">kg</span>` : `—<span class="unit">kg</span>`;
+
+  const prev = cache[prevDateStr(currentDate)];
+  const pw = prev && parseFloat(prev.weight);
+  diffEl.classList.remove('up', 'down', 'flat');
+  if (Number.isFinite(w) && Number.isFinite(pw)) {
+    const d = w - pw;
+    const sign = d > 0 ? '+' : '';
+    diffEl.innerHTML = `${sign}${d.toFixed(1)}<span class="unit">kg</span>`;
+    diffEl.classList.add(d > 0.05 ? 'up' : d < -0.05 ? 'down' : 'flat');
+  } else {
+    diffEl.innerHTML = `—<span class="unit">kg</span>`;
+    diffEl.classList.add('flat');
+  }
+
+  if (Number.isFinite(w) && Number.isFinite(goal)) {
+    const remain = w - goal;
+    togoal.innerHTML = remain >= 0
+      ? `${remain.toFixed(1)}<span class="unit">kg</span>`
+      : '達成 🎉';
+    const start = firstRecordedWeight() ?? w;
+    if (start > goal) {
+      const pct = Math.max(0, Math.min(100, ((start - w) / (start - goal)) * 100));
+      bar.style.width = pct + '%';
+    } else {
+      bar.style.width = '100%';
+    }
+  } else {
+    togoal.innerHTML = `—<span class="unit">kg</span>`;
+    bar.style.width = '0%';
+  }
+}
+
+//===================== Preview =====================
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function lineItems(text) {
+  return String(text || '')
+    .split(/\r?\n/)
+    .map(l => l.replace(/^\s*[-・]\s*/, '').trim())
+    .filter(Boolean);
+}
+
+function renderPreview() {
+  const body = document.getElementById('previewBody');
+  const w = parseFloat(entry.weight);
+  const goal = parseFloat(settings.goalWeight);
+  const prev = cache[prevDateStr(currentDate)];
+  const pw = prev && parseFloat(prev.weight);
+
+  const moodLabel = { good: '😊 にこにこ', normal: '😐 ふつう', bad: '😞 わるい' }[entry.mood] || '—';
+
+  let diffHtml = '—';
+  let diffClass = 'flat';
+  if (Number.isFinite(w) && Number.isFinite(pw)) {
+    const d = w - pw;
+    const sign = d > 0 ? '+' : '';
+    diffHtml = `${sign}${d.toFixed(1)}<span class="unit">kg</span>`;
+    diffClass = d > 0.05 ? 'up' : d < -0.05 ? 'down' : 'flat';
+  }
+
+  let togoalHtml = '—';
+  if (Number.isFinite(w) && Number.isFinite(goal)) {
+    const remain = w - goal;
+    togoalHtml = remain >= 0 ? `${remain.toFixed(1)}<span class="unit">kg</span>` : '達成 🎉';
+  }
+
+  const start = firstRecordedWeight() ?? w;
+  let pct = 0;
+  if (Number.isFinite(w) && Number.isFinite(goal)) {
+    if (w <= goal) pct = 100;
+    else if (start > goal) pct = Math.max(0, Math.min(100, ((start - w) / (start - goal)) * 100));
+  }
+
+  const checkLabels = {
+    stretch: 'ストレッチ', strength: '筋トレ', cardio: '有酸素運動',
+    water: '水2L飲む', noSnack: '間食なし'
+  };
+  const checksHtml = Object.keys(checkLabels).map(k =>
+    `<span class="chip ${entry.checks[k] ? 'on' : ''}">${entry.checks[k] ? '✓ ' : ''}${checkLabels[k]}</span>`
+  ).join('');
+
+  const mealItems = lineItems(entry.meals);
+  const mealsHtml = mealItems.length
+    ? mealItems.map(l => `<li>${escapeHtml(l)}</li>`).join('')
+    : '<li style="color:var(--ink-soft)">記録なし</li>';
+  const mealTotal = parseFloat(entry.mealTotal);
+
+  const exItems = lineItems(entry.exercise);
+  const exHtml = exItems.length
+    ? exItems.map(l => `<li>${escapeHtml(l)}</li>`).join('')
+    : '<li style="color:var(--ink-soft)">記録なし</li>';
+  const exTotal = parseFloat(entry.exerciseTotal);
+
+  body.innerHTML = `
+    <div class="top-info">
+      <h1>Daily Health Note</h1>
+      <div class="date">${currentDate.replace(/-/g, '.')}</div>
+      <div class="day">${dayJa(currentDate)}</div>
+    </div>
+
+    <h2>今日の情報</h2>
+    <div class="info-grid">
+      <div class="row"><span>天気</span><span>${escapeHtml(entry.weather || '—')}</span></div>
+      <div class="row"><span>気温</span><span>${entry.temp !== '' && entry.temp != null ? escapeHtml(entry.temp) + '°C' : '—'}</span></div>
+      <div class="row"><span>気分</span><span>${moodLabel}</span></div>
+    </div>
+
+    <h2 style="margin-top:18px">体重</h2>
+    <div class="weight-grid">
+      <div class="weight-card">
+        <div class="label">今日</div>
+        <div class="value">${Number.isFinite(w) ? w.toFixed(1) : '—'}<span class="unit">kg</span></div>
+      </div>
+      <div class="weight-card">
+        <div class="label">前日比</div>
+        <div class="value ${diffClass}">${diffHtml}</div>
+      </div>
+      <div class="weight-card">
+        <div class="label">目標まで</div>
+        <div class="value">${togoalHtml}</div>
+      </div>
+    </div>
+    <div class="goal-bar"><span style="width:${pct}%"></span></div>
+
+    <h2 style="margin-top:18px">出来たことチェック</h2>
+    <div class="check-grid">${checksHtml}</div>
+
+    <h2 style="margin-top:18px">食事</h2>
+    <ul class="meal-list">${mealsHtml}</ul>
+    ${Number.isFinite(mealTotal) ? `<div class="total">トータル <span class="num">${mealTotal.toLocaleString()}</span> kcal</div>` : ''}
+
+    <h2 style="margin-top:18px">運動</h2>
+    <ul class="ex-list">${exHtml}</ul>
+    ${Number.isFinite(exTotal) ? `<div class="total">総消費カロリー <span class="num">${exTotal.toLocaleString()}</span> kcal</div>` : ''}
+
+    <footer>WEIGHT GOAL · ${Number.isFinite(goal) ? goal.toFixed(1) : '—'} KG</footer>
+  `;
+}
+
+//===================== History =====================
+function renderHistory() {
+  const list = document.getElementById('historyList');
+  const keys = Object.keys(cache).sort().reverse();
+  if (keys.length === 0) {
+    list.innerHTML = '<div style="color:var(--ink-soft);font-size:13px">まだ記録がありません。</div>';
+    return;
+  }
+  list.innerHTML = keys.map(k => {
+    const e = cache[k];
+    const w = parseFloat(e.weight);
+    const t = parseFloat(e.mealTotal);
+    return `<div class="history-item" data-date="${k}">
+      <span class="date">${k} <span style="color:var(--ink-soft);font-size:11px;margin-left:6px">${dayJa(k)}</span></span>
+      <span class="meta">${Number.isFinite(w) ? w.toFixed(1) + 'kg' : '—'}${Number.isFinite(t) ? ' · ' + t.toLocaleString() + ' kcal' : ''}</span>
+    </div>`;
+  }).join('');
+  list.querySelectorAll('.history-item').forEach(el => {
+    el.onclick = () => {
+      loadEntry(el.dataset.date);
+      switchTab('edit');
+    };
+  });
+}
+
+//===================== Settings UI =====================
+function renderStorageInfo() {
+  const el = document.getElementById('storageInfo');
+  if (storage.mode === 'fs') {
+    const name = storage.dirHandle && storage.dirHandle.name ? storage.dirHandle.name : '?';
+    el.innerHTML = `現在の保存先: <b>📁 ${escapeHtml(name)}</b><br>このフォルダ内の <code>YYYY-MM-DD.json</code> に書き出しています。`;
+  } else if (storage.isFsAvailable()) {
+    el.innerHTML = `現在の保存先: <b>ブラウザ内部</b>（端末を変えると失われます）<br>「保存フォルダを選ぶ」を押すと、端末上のフォルダにファイルとして保存されます。`;
+  } else {
+    el.innerHTML = `現在の保存先: <b>ブラウザ内部</b><br>このブラウザはフォルダ選択に対応していません。Chrome / Edge / Samsung Internet をご利用ください。`;
+  }
+}
+
+//===================== Tabs =====================
+function switchTab(name) {
+  document.querySelectorAll('.tabs button').forEach(b => {
+    b.classList.toggle('active', b.dataset.tab === name);
+  });
+  ['edit', 'preview', 'history', 'settings'].forEach(t => {
+    document.getElementById('tab-' + t).classList.toggle('hide', t !== name);
+  });
+  if (name === 'preview') renderPreview();
+  if (name === 'history') renderHistory();
+  if (name === 'settings') renderStorageInfo();
+}
+document.querySelectorAll('.tabs button').forEach(b => {
+  b.onclick = () => switchTab(b.dataset.tab);
+});
+
+//===================== Inputs binding =====================
+function bindInputs() {
+  document.getElementById('dateInput').onchange = e => loadEntry(e.target.value);
+  document.getElementById('todayBtn').onclick = () => loadEntry(todayStr());
+
+  document.getElementById('f_weather').oninput = e => { entry.weather = e.target.value; scheduleSave(); };
+  document.getElementById('f_temp').oninput    = e => { entry.temp = e.target.value; scheduleSave(); };
+  document.getElementById('f_weight').oninput  = e => {
+    entry.weight = e.target.value;
+    updateWeightCards();
+    scheduleSave();
+  };
+  document.getElementById('f_goal').oninput = e => {
+    settings.goalWeight = e.target.value;
+    saveSettings();
+    updateWeightCards();
+  };
+  document.getElementById('f_meals').oninput = e => { entry.meals = e.target.value; scheduleSave(); };
+  document.getElementById('f_meal_total').oninput = e => { entry.mealTotal = e.target.value; scheduleSave(); };
+  document.getElementById('f_ex').oninput = e => { entry.exercise = e.target.value; scheduleSave(); };
+  document.getElementById('f_ex_total').oninput = e => { entry.exerciseTotal = e.target.value; scheduleSave(); };
+
+  document.querySelectorAll('#moodPicker .mood').forEach(el => {
+    el.onclick = () => {
+      entry.mood = el.dataset.mood;
+      document.querySelectorAll('#moodPicker .mood').forEach(m =>
+        m.classList.toggle('selected', m.dataset.mood === entry.mood));
+      scheduleSave();
+    };
+  });
+
+  document.querySelectorAll('#checkList input[type=checkbox]').forEach(cb => {
+    cb.onchange = () => {
+      entry.checks[cb.dataset.key] = cb.checked;
+      cb.closest('li').classList.toggle('done', cb.checked);
+      scheduleSave();
+    };
+  });
+
+  document.getElementById('pickDirBtn').onclick = async () => {
+    const ok = await storage.pickDirectory();
+    if (ok) {
+      document.getElementById('banner').classList.add('hide');
+      renderStorageInfo();
+      renderHistory();
+      updateWeightCards();
+      setStatus('フォルダ接続 ✓');
+    }
+  };
+  document.getElementById('forgetDirBtn').onclick = async () => {
+    if (!confirm('フォルダ接続を解除しますか？\n（フォルダ内のファイルは消えません）')) return;
+    await storage.forgetDirectory();
+    renderStorageInfo();
+    renderHistory();
+    loadEntry(currentDate);
+    setStatus('接続解除');
+  };
+
+  document.getElementById('reconnectBtn').onclick = async () => {
+    const ok = await storage.reconnect();
+    document.getElementById('banner').classList.add('hide');
+    if (ok) {
+      renderHistory();
+      loadEntry(currentDate);
+      setStatus('再接続 ✓');
+    }
+  };
+  document.getElementById('dismissBannerBtn').onclick = () => {
+    document.getElementById('banner').classList.add('hide');
+  };
+
+  document.getElementById('clearDayBtn').onclick = async () => {
+    if (!confirm(`${currentDate} のデータを消去しますか？`)) return;
+    await storage.delete(currentDate);
+    loadEntry(currentDate);
+    renderHistory();
+    setStatus('消去しました');
+  };
+}
+
+//===================== Background =====================
+function applyRandomBackground() {
+  const palettes = [
+    'linear-gradient(135deg, #fdf6e3 0%, #f5e6d3 100%)',
+    'linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%)',
+    'linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%)',
+    'linear-gradient(135deg, #ecfccb 0%, #d9f99d 100%)',
+    'linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%)',
+    'linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%)',
+    'linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%)',
+    'linear-gradient(135deg, #fef9c3 0%, #fde68a 100%)'
+  ];
+  document.body.style.background = palettes[Math.floor(Math.random() * palettes.length)];
+}
+
+//===================== Service worker =====================
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+
+//===================== Init =====================
+(async function init() {
+  applyRandomBackground();
+  bindInputs();
+  await storage.init();
+  loadEntry(todayStr());
+  renderHistory();
+  renderStorageInfo();
+  setStatus(storage.mode === 'fs' ? '準備完了（ファイル）' : '準備完了');
+})();
+</script>
+</body>
+</html>
