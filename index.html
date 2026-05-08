@@ -804,6 +804,23 @@
     </section>
 
     <section>
+      <h2>kcal自動推定</h2>
+      <div class="field" style="align-items:flex-start">
+        <label style="flex:0 0 90px;font-size:13px;color:var(--ink-soft);padding-top:8px">プロバイダ</label>
+        <div class="seg" data-seg="apiProvider">
+          <button type="button" data-val="anthropic" id="f_provider_anthropic">Claude</button>
+          <button type="button" data-val="openai" id="f_provider_openai">ChatGPT</button>
+        </div>
+      </div>
+      <div class="field"><label style="flex:0 0 90px;font-size:13px;color:var(--ink-soft)">APIキー</label><input type="password" id="f_apiKey" placeholder="sk-..." autocomplete="off" spellcheck="false"></div>
+      <p style="font-size:12px;color:var(--ink-soft);margin-top:10px">
+        食事/運動フォームの「🔍 推定」ボタンでkcalを自動入力できます。<br>
+        Claudeは <a href="https://console.anthropic.com/" target="_blank" rel="noopener">console.anthropic.com</a> で、ChatGPTは <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">platform.openai.com</a> でキーを発行してください。<br>
+        キーはこの端末のlocalStorageにのみ保存され、推定リクエスト以外で送信されません。
+      </p>
+    </section>
+
+    <section>
       <h2>★ いつものリスト</h2>
       <div id="favListBody"></div>
       <p style="font-size:12px;color:var(--ink-soft);margin-top:14px">
@@ -858,7 +875,7 @@ const storage = {
 
   async init() {
     settings = Object.assign(
-      { goalWeight: 46, height: 158, age: 35, favorites: { meal: [], exercise: [] } },
+      { goalWeight: 46, height: 158, age: 35, apiProvider: 'anthropic', apiKey: '', favorites: { meal: [], exercise: [] } },
       JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}')
     );
     if (!settings.favorites || typeof settings.favorites !== 'object') settings.favorites = { meal: [], exercise: [] };
@@ -1115,6 +1132,97 @@ const imageStore = {
     return out;
   }
 };
+
+//===================== Kcal estimator (LLM) =====================
+function latestKnownWeight() {
+  if (Array.isArray(entry?.events)) {
+    const w = entry.events.filter(e => e.type === 'weight' && Number.isFinite(e.value)).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+    if (w.length) return w[w.length - 1].value;
+  }
+  const dates = Object.keys(cache).sort().reverse();
+  for (const d of dates) {
+    const evs = cache[d]?.events;
+    if (!Array.isArray(evs)) continue;
+    const w = evs.filter(e => e.type === 'weight' && Number.isFinite(e.value)).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+    if (w.length) return w[w.length - 1].value;
+  }
+  return null;
+}
+
+async function callLLM(prompt) {
+  const provider = settings.apiProvider || 'anthropic';
+  const key = (settings.apiKey || '').trim();
+  if (!key) throw new Error('APIキーが未設定です（設定タブで登録してください）');
+  if (provider === 'anthropic') {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 30,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    if (!resp.ok) throw new Error(`Claude API ${resp.status}: ${(await resp.text()).slice(0,200)}`);
+    const data = await resp.json();
+    return data.content?.[0]?.text || '';
+  }
+  if (provider === 'openai') {
+    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'authorization': `Bearer ${key}`,
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        max_tokens: 30,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    if (!resp.ok) throw new Error(`OpenAI API ${resp.status}: ${(await resp.text()).slice(0,200)}`);
+    const data = await resp.json();
+    return data.choices?.[0]?.message?.content || '';
+  }
+  throw new Error('未対応のプロバイダ');
+}
+
+function parseKcalNumber(s) {
+  if (!s) return null;
+  const m = String(s).match(/-?\d+(?:\.\d+)?/);
+  if (!m) return null;
+  const n = parseFloat(m[0]);
+  return Number.isFinite(n) ? Math.round(n) : null;
+}
+
+async function estimateMealKcal(text) {
+  const t = (text || '').trim();
+  if (!t) throw new Error('内容を入力してから推定してください');
+  const prompt = `成人女性の食事「${t}」の標準的な1人前の摂取カロリー(kcal)を、整数1つだけで答えてください（単位や説明は不要）。例: 350`;
+  const out = await callLLM(prompt);
+  const n = parseKcalNumber(out);
+  if (n === null) throw new Error(`推定値の解析に失敗: ${out.slice(0, 60)}`);
+  return n;
+}
+
+async function estimateExerciseKcal(name, value) {
+  const n = (name || '').trim();
+  if (!n) throw new Error('種目を入力してから推定してください');
+  const v = (value || '').trim();
+  const w = latestKnownWeight();
+  const age = parseInt(settings.age, 10);
+  const profile = `成人女性${Number.isFinite(age) ? age + '歳' : ''}${Number.isFinite(w) ? `・体重${w}kg` : ''}`.trim();
+  const prompt = `${profile}が運動「${n}${v ? '（' + v + '）' : ''}」をした時のおおよその消費カロリー(kcal)を、整数1つだけで答えてください（単位や説明は不要）。例: 180`;
+  const out = await callLLM(prompt);
+  const k = parseKcalNumber(out);
+  if (k === null) throw new Error(`推定値の解析に失敗: ${out.slice(0, 60)}`);
+  return k;
+}
 
 async function compressImage(file, maxSize = 1280, quality = 0.85) {
   const url = URL.createObjectURL(file);
@@ -1486,7 +1594,7 @@ function buildAddForm(type, prefill = null) {
         </div>
       </div>
       <div class="field"><label>内容</label><input type="text" data-f="text" placeholder="オートミール" value="${escapeHtml(prefill?.text ?? '')}"></div>
-      <div class="field"><label>kcal</label><input type="number" data-f="kcal" placeholder="180" value="${prefill?.kcal ?? ''}"><span class="unit">kcal</span></div>
+      <div class="field"><label>kcal</label><input type="number" data-f="kcal" placeholder="180" value="${prefill?.kcal ?? ''}"><span class="unit">kcal</span><button type="button" class="ghost" data-act="estimate-kcal" title="LLMで推定">🔍 推定</button></div>
       ${imagePickerHtml()}
     `;
   } else if (type === 'exercise') {
@@ -1494,7 +1602,7 @@ function buildAddForm(type, prefill = null) {
       <div class="field"><label>時刻</label><input type="time" data-f="time" value="${time}"></div>
       <div class="field"><label>種目</label><input type="text" data-f="name" placeholder="歩数 / YouTube など" value="${escapeHtml(prefill?.name ?? '')}"></div>
       <div class="field"><label>内容</label><input type="text" data-f="value" placeholder="8,420歩 / 20分" value="${escapeHtml(prefill?.value ?? '')}"></div>
-      <div class="field"><label>消費kcal</label><input type="number" data-f="kcal" placeholder="200" value="${prefill?.kcal ?? ''}"><span class="unit">kcal</span></div>
+      <div class="field"><label>消費kcal</label><input type="number" data-f="kcal" placeholder="200" value="${prefill?.kcal ?? ''}"><span class="unit">kcal</span><button type="button" class="ghost" data-act="estimate-kcal" title="LLMで推定">🔍 推定</button></div>
       <div class="field"><label>URL</label><input type="url" data-f="url" placeholder="YouTubeリンクなど" value="${escapeHtml(prefill?.url ?? '')}"></div>
       <div class="thumb-preview" data-thumb-preview></div>
       ${imagePickerHtml()}
@@ -1641,6 +1749,9 @@ function openAddForm(type, prefill = null) {
   const favSaveBtn = form.querySelector('[data-act="save-fav"]');
   if (favSaveBtn) favSaveBtn.onclick = saveFavoriteFromForm;
 
+  const estimateBtn = form.querySelector('[data-act="estimate-kcal"]');
+  if (estimateBtn) estimateBtn.onclick = () => runKcalEstimate(form, type, estimateBtn);
+
   bindFavChips(type);
 
   // URL → YouTubeサムネ即時プレビュー
@@ -1725,6 +1836,33 @@ function bindImagePicker(form) {
     renderFormImageStrip();
   };
   renderFormImageStrip();
+}
+
+async function runKcalEstimate(form, type, btn) {
+  const get = name => form.querySelector(`[data-f="${name}"]`)?.value || '';
+  const kcalInput = form.querySelector('[data-f="kcal"]');
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '推定中…';
+  try {
+    let n;
+    if (type === 'meal') {
+      n = await estimateMealKcal(get('text'));
+    } else if (type === 'exercise') {
+      n = await estimateExerciseKcal(get('name'), get('value'));
+    }
+    if (Number.isFinite(n) && kcalInput) {
+      kcalInput.value = n;
+      kcalInput.dispatchEvent(new Event('input', { bubbles: true }));
+      setStatus('推定 ✓');
+    }
+  } catch (e) {
+    alert(e.message || '推定失敗');
+    setStatus('推定失敗');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = original;
+  }
 }
 
 function bindFavChips(type) {
@@ -2496,6 +2634,26 @@ function bindInputs() {
     settings.age = e.target.value;
     saveSettings();
   };
+
+  document.getElementById('f_apiKey').value = settings.apiKey || '';
+  document.getElementById('f_apiKey').oninput = e => {
+    settings.apiKey = e.target.value.trim();
+    saveSettings();
+  };
+  const refreshProviderSeg = () => {
+    const provider = settings.apiProvider || 'anthropic';
+    document.querySelectorAll('[data-seg="apiProvider"] button').forEach(b => {
+      b.classList.toggle('on', b.dataset.val === provider);
+    });
+  };
+  document.querySelectorAll('[data-seg="apiProvider"] button').forEach(b => {
+    b.onclick = () => {
+      settings.apiProvider = b.dataset.val;
+      saveSettings();
+      refreshProviderSeg();
+    };
+  });
+  refreshProviderSeg();
 
   document.querySelectorAll('#addChips .add-chip').forEach(chip => {
     chip.onclick = () => {
