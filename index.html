@@ -546,9 +546,200 @@
     flex-shrink: 0;
   }
 
+  /* ---------- SNS Share Card (preview tab) ---------- */
+  .share-card {
+    position: relative;
+    background: linear-gradient(135deg, #fff5f8 0%, #ffe4ec 100%);
+    border-radius: 22px;
+    border: 2px solid #ffc2d4;
+    padding: 0;
+    overflow: hidden;
+    box-shadow: 0 10px 28px rgba(232, 90, 113, 0.12);
+    color: #3a2230;
+  }
+  .share-card .stripe {
+    height: 16px;
+    background: repeating-linear-gradient(-45deg, #ffb6cd 0 12px, #fff0f5 12px 24px);
+  }
+  .share-card .inner { padding: 18px 18px 22px; }
+  .share-card .header-band {
+    background: #ff6e91;
+    color: #fff;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    font-size: 13px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    display: inline-block;
+    margin-bottom: 12px;
+  }
+  .share-card .date-row {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 10px; margin-bottom: 14px;
+  }
+  .share-card .date-row .big-date {
+    font-size: 26px; font-weight: 800;
+    color: #2c2c2c; line-height: 1.15;
+  }
+  .share-card .date-row .meta-pill {
+    background: #fff;
+    border: 1px solid #ffc2d4;
+    border-radius: 14px;
+    padding: 6px 12px;
+    font-size: 12px;
+    text-align: left;
+    min-width: 96px;
+    display: flex; flex-direction: column; gap: 2px;
+    flex-shrink: 0;
+  }
+  .share-card .block {
+    background: #fff;
+    border-radius: 16px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    border: 1px solid #ffd9e3;
+    position: relative;
+  }
+  .share-card .block h3 {
+    margin: 0 0 8px;
+    font-size: 16px;
+    color: #ff6e91;
+    font-weight: 700;
+    font-style: italic;
+  }
+  .share-card .block.section h3 {
+    font-style: normal;
+    display: inline-block;
+    background: #ffe1ea;
+    border-radius: 8px;
+    padding: 2px 10px;
+    font-size: 13px;
+    color: #c93a5e;
+    margin-bottom: 8px;
+  }
+  .share-card .block ul.bullets { margin: 0; padding: 0; list-style: none; }
+  .share-card .block ul.bullets li {
+    font-size: 13px; line-height: 1.7;
+    padding-left: 12px; position: relative;
+  }
+  .share-card .block ul.bullets li::before {
+    content: "・"; position: absolute; left: 0; color: #ff6e91;
+  }
+  .share-card .block.with-icon { padding-right: 78px; }
+  .share-card .block .icon-art {
+    position: absolute;
+    font-size: 44px;
+    right: 14px; top: 50%;
+    transform: translateY(-50%);
+  }
+  .share-card .meal-row {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 4px 0;
+    font-size: 13px;
+  }
+  .share-card .meal-tag {
+    background: #ffd1dc;
+    color: #c93a5e;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+    text-align: center;
+    min-width: 38px;
+  }
+  .share-card .meal-tag.tag-after { background: #ffe5b8; color: #b06914; }
+  .share-card .meal-tag.tag-snack  { background: #d6f0d4; color: #3f7d3a; }
+  .share-card .meal-tag.tag-night  { background: #e0d3f5; color: #6c4a9e; }
+  .share-card .meal-text { word-break: break-word; }
+  .share-card .meal-kcal { font-size: 12px; color: #6b6b6b; text-align: right; white-space: nowrap; }
+  .share-card .meal-total {
+    text-align: right;
+    margin-top: 6px;
+    font-size: 13px; font-weight: 700;
+    color: #ff6e91;
+    border-top: 1px dashed #ffd9e3;
+    padding-top: 6px;
+  }
+  .share-card .ex-section { font-size: 13px; line-height: 1.7; }
+  .share-card .ex-group { font-weight: 700; color: #ff6e91; margin-top: 2px; }
+  .share-card .ex-item { padding-left: 16px; }
+  .share-card .ex-foot { text-align: right; font-size: 12px; color: #6b6b6b; margin-top: 6px; }
+  .share-card .ex-foot b { color: #ff6e91; font-size: 13px; }
+  .share-card .habit-banner {
+    background: #ffd1dc;
+    border-radius: 14px;
+    padding: 10px 14px;
+    margin-bottom: 10px;
+  }
+  .share-card .habit-banner h3 {
+    margin: 0 0 6px;
+    font-size: 14px;
+    color: #c93a5e;
+    font-style: italic;
+    font-weight: 700;
+  }
+  .share-card .habit-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .share-card .habit-chip {
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #fff;
+    border: 1px solid #ffb6cd;
+    color: #9a6b78;
+  }
+  .share-card .habit-chip.on {
+    background: #ff6e91; color: #fff;
+    border-color: #ff6e91; font-weight: 600;
+  }
+  .share-card .habit-chip.on::before { content: "✓ "; }
+  .share-card .balance-banner {
+    background: linear-gradient(90deg, #ff6e91, #ff8fa9);
+    color: #fff;
+    border-radius: 14px;
+    padding: 10px 14px;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 10px;
+    font-size: 14px;
+  }
+  .share-card .balance-banner .num { font-size: 20px; margin: 0 4px; }
+  .share-card .balance-note { font-size: 10px; opacity: 0.85; font-weight: 400; display: block; margin-top: 2px; }
+  .share-card .notes-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .share-card .note-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 10px 12px;
+    border: 1px solid #ffd9e3;
+    font-size: 12px; line-height: 1.6;
+  }
+  .share-card .note-card.tomorrow { background: #fff8e1; border-color: #ffe2a3; }
+  .share-card .note-card h4 {
+    margin: 0 0 4px;
+    font-size: 12px;
+    color: #ff6e91;
+    font-weight: 700;
+  }
+  .share-card .note-card.tomorrow h4 { color: #c08510; }
+  .share-card .note-card p { margin: 0; white-space: pre-wrap; word-break: break-word; }
+  .share-card .small-foot {
+    text-align: center; font-size: 10px; color: #b88598;
+    margin-top: 8px; letter-spacing: 0.05em;
+  }
+  .share-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 12px; }
+
   @media (max-width: 480px) {
     .weight-grid { grid-template-columns: 1fr; }
     .add-chip { flex: 1 0 calc(33.33% - 8px); }
+    .share-card .notes-grid { grid-template-columns: 1fr; }
+    .share-card .date-row .big-date { font-size: 22px; }
   }
 </style>
 </head>
@@ -582,6 +773,7 @@
         <button class="add-chip" data-type="exercise"><span class="icon">🏃</span>運動</button>
         <button class="add-chip" data-type="mood"><span class="icon">😊</span>気分</button>
         <button class="add-chip" data-type="check"><span class="icon">✅</span>チェック</button>
+        <button class="add-chip" data-type="note"><span class="icon">📝</span>メモ</button>
       </div>
       <div class="add-form hide" id="addForm"></div>
     </section>
@@ -595,7 +787,14 @@
 
   <!-- ============ Preview Tab ============ -->
   <div id="tab-preview" class="hide">
-    <section class="preview" id="previewBody"></section>
+    <div id="previewBody"></div>
+    <div class="share-actions">
+      <button id="copyTextBtn" class="ghost">📋 テキストをコピー</button>
+      <button id="shareBtn" class="primary">📤 共有</button>
+    </div>
+    <p style="font-size:11px;color:var(--ink-soft);margin-top:8px;text-align:center">
+      画像でシェアしたい時は、上のカードをスクショしてSNSに投稿してください 💕
+    </p>
   </div>
 
   <!-- ============ History Tab ============ -->
@@ -609,8 +808,11 @@
   <!-- ============ Settings Tab ============ -->
   <div id="tab-settings" class="hide">
     <section>
-      <h2>目標</h2>
+      <h2>目標・プロフィール</h2>
       <div class="field"><label style="flex:0 0 90px;font-size:13px;color:var(--ink-soft)">目標体重</label><input type="number" step="0.1" id="f_goal" placeholder="46"><span class="unit">kg</span></div>
+      <div class="field"><label style="flex:0 0 90px;font-size:13px;color:var(--ink-soft)">身長</label><input type="number" step="0.1" id="f_height" placeholder="158"><span class="unit">cm</span></div>
+      <div class="field"><label style="flex:0 0 90px;font-size:13px;color:var(--ink-soft)">年齢</label><input type="number" step="1" id="f_age" placeholder="35"><span class="unit">歳</span></div>
+      <p style="font-size:12px;color:var(--ink-soft);margin-top:10px">身長・年齢は基礎代謝(BMR)の自動計算に使います。Mifflin-St Jeor式（女性向け）。</p>
     </section>
 
     <section>
@@ -668,7 +870,7 @@ const storage = {
 
   async init() {
     settings = Object.assign(
-      { goalWeight: 46, favorites: { meal: [], exercise: [] } },
+      { goalWeight: 46, height: 158, age: 35, favorites: { meal: [], exercise: [] } },
       JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}')
     );
     if (!settings.favorites || typeof settings.favorites !== 'object') settings.favorites = { meal: [], exercise: [] };
@@ -854,7 +1056,7 @@ const storage = {
   }
 };
 
-let settings = { goalWeight: 46, favorites: { meal: [], exercise: [] } };
+let settings = { goalWeight: 46, height: 158, age: 35, favorites: { meal: [], exercise: [] } };
 function saveSettings() {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
 }
@@ -1091,7 +1293,8 @@ const TYPE_META = {
   exercise: { icon: '🏃', label: '運動' },
   mood:     { icon: '😊', label: '気分' },
   weather:  { icon: '☀️', label: '天気' },
-  check:    { icon: '✅', label: 'チェック' }
+  check:    { icon: '✅', label: 'チェック' },
+  note:     { icon: '📝', label: 'メモ' }
 };
 
 const CHECK_LABELS = {
@@ -1103,7 +1306,7 @@ const MOOD_LABELS = {
   good: '😊 にこにこ', normal: '😐 ふつう', bad: '😞 わるい'
 };
 
-const MEAL_LABELS = ['朝', '昼', '夜', '間食'];
+const MEAL_LABELS = ['朝', '昼', '夜', '間食', '運動後'];
 
 //===================== State =====================
 let currentDate = todayStr();
@@ -1163,6 +1366,8 @@ function loadEntry(date) {
   cancelAddForm();
   document.getElementById('dateInput').value = currentDate;
   document.getElementById('f_goal').value = settings.goalWeight ?? '';
+  document.getElementById('f_height').value = settings.height ?? '';
+  document.getElementById('f_age').value = settings.age ?? '';
   renderTimeline();
   autoFetchWeatherIfNeeded();
 }
@@ -1333,6 +1538,21 @@ function buildAddForm(type, prefill = null) {
         </div>
       </div>
       ${isEditing ? '' : '<div style="font-size:11px;color:var(--ink-soft);margin-top:4px">複数選択できます。同じ時刻でまとめて記録します。</div>'}
+    `;
+  } else if (type === 'note') {
+    const kind = prefill?.kind || 'today';
+    inner = `
+      <div class="field"><label>時刻</label><input type="time" data-f="time" value="${time}"></div>
+      <div class="field"><label>区分</label>
+        <div class="seg" data-seg="kind">
+          <button type="button" class="${kind === 'today' ? 'on' : ''}" data-val="today">🌷 今日のまとめ</button>
+          <button type="button" class="${kind === 'tomorrow' ? 'on' : ''}" data-val="tomorrow">💡 明日のポイント</button>
+        </div>
+      </div>
+      <div class="field" style="align-items:flex-start">
+        <label>本文</label>
+        <textarea data-f="text" rows="3" placeholder="しっかり動けて、栄養もバランス良く◎" style="flex:1;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font:inherit;background:#fff;resize:vertical">${escapeHtml(prefill?.text ?? '')}</textarea>
+      </div>
     `;
   }
 
@@ -1692,6 +1912,11 @@ async function saveAddForm() {
     const t = get('temp');
     payload.temp = t === '' ? '' : parseFloat(t);
     if (!payload.weather && payload.temp === '') { alert('天気か気温を入力してください'); return; }
+  } else if (activeAddType === 'note') {
+    const text = (form.querySelector('[data-f="text"]')?.value || '').trim();
+    if (!text) { alert('本文を入力してください'); return; }
+    payload.text = text;
+    payload.kind = getSeg('kind') || 'today';
   } else if (activeAddType === 'check') {
     if (editingId) {
       const key = getSeg('key');
@@ -1766,6 +1991,10 @@ function eventBodyHtml(e) {
     return `${escapeHtml(e.weather || '')}${Number.isFinite(t) ? ` <span class="sub">${t}°C</span>` : ''}`;
   }
   if (e.type === 'check') return `${CHECK_LABELS[e.key] || '?'}`;
+  if (e.type === 'note') {
+    const kindLabel = e.kind === 'tomorrow' ? '💡 明日のポイント' : '🌷 今日のまとめ';
+    return `<b>${kindLabel}</b><div class="sub" style="white-space:pre-wrap">${escapeHtml(e.text || '')}</div>`;
+  }
   return '';
 }
 
@@ -1858,114 +2087,308 @@ function aggForDate(dateStr) {
 }
 
 //===================== Preview =====================
-function firstRecordedWeight() {
-  const keys = Object.keys(cache).sort();
-  for (const k of keys) {
-    const w = aggForDate(k).latestWeight;
-    if (Number.isFinite(w)) return w;
-  }
-  return null;
+function mealTagClass(label) {
+  if (label === '運動後') return 'tag-after';
+  if (label === '間食') return 'tag-snack';
+  if (label === '夜') return 'tag-night';
+  return '';
 }
 
-function renderPreview() {
-  const body = document.getElementById('previewBody');
+function formatDateJa(dateStr) {
+  const [y, mo, da] = dateStr.split('-');
+  const days = ['日', '月', '火', '水', '木', '金', '土'];
+  const d = new Date(dateStr + 'T00:00:00');
+  return `${y}/${mo}/${da}（${days[d.getDay()]}）`;
+}
+
+function formatRange(lo, hi) {
+  const round = n => Math.round(n / 10) * 10;
+  const a = round(lo), b = round(hi);
+  if (a <= 0 && b <= 0) {
+    return `−${Math.abs(b).toLocaleString()}〜${Math.abs(a).toLocaleString()}`;
+  }
+  if (a >= 0 && b >= 0) {
+    return `+${a.toLocaleString()}〜${b.toLocaleString()}`;
+  }
+  return `${a.toLocaleString()}〜${b.toLocaleString()}`;
+}
+
+function buildShareData() {
   const agg = aggregate(entry.events);
   const w = agg.latestWeight;
   const goal = parseFloat(settings.goalWeight);
   const pw = aggForDate(prevDateStr(currentDate)).latestWeight;
 
-  let diffHtml = '—', diffClass = 'flat';
+  const height = parseFloat(settings.height);
+  const age = parseFloat(settings.age);
+  let bmr = null, tdeeLo = null, tdeeHi = null;
+  if (Number.isFinite(w) && Number.isFinite(height) && Number.isFinite(age)) {
+    const raw = 10 * w + 6.25 * height - 5 * age - 161;
+    bmr = Math.round(raw / 10) * 10;
+    tdeeLo = Math.round(raw * 1.5 / 10) * 10;
+    tdeeHi = Math.round(raw * 1.7 / 10) * 10;
+  }
+
+  const exEvents = entry.events
+    .filter(e => e.type === 'exercise')
+    .slice()
+    .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+
+  const todayNote = entry.events
+    .filter(e => e.type === 'note' && (e.kind === 'today' || !e.kind))
+    .map(e => e.text || '')
+    .join('\n').trim();
+  const tomorrowNote = entry.events
+    .filter(e => e.type === 'note' && e.kind === 'tomorrow')
+    .map(e => e.text || '')
+    .join('\n').trim();
+
+  return { agg, w, goal, pw, bmr, tdeeLo, tdeeHi, exEvents, todayNote, tomorrowNote };
+}
+
+function renderPreview() {
+  const body = document.getElementById('previewBody');
+  const { agg, w, goal, pw, bmr, tdeeLo, tdeeHi, exEvents, todayNote, tomorrowNote } = buildShareData();
+
+  // Date + meta
+  const dateStr = formatDateJa(currentDate);
+  const tempVal = agg.latestWeather ? parseFloat(agg.latestWeather.temp) : NaN;
+  const weatherLabel = agg.latestWeather ? (agg.latestWeather.weather || '') : '';
+  const moodLabel = MOOD_LABELS[agg.latestMood] || '';
+
+  // Weight bullets
+  const weightLine = Number.isFinite(w) ? `<b>${w.toFixed(1)} kg</b>` : '—';
+  let diffLine = '— kg（記録なし）';
   if (Number.isFinite(w) && Number.isFinite(pw)) {
     const d = w - pw;
+    const sign = d > 0 ? '+' : d < 0 ? '−' : '±';
+    diffLine = `<b>${sign}${Math.abs(d).toFixed(1)} kg</b>`;
+  }
+  let goalLine = '—';
+  if (Number.isFinite(w) && Number.isFinite(goal)) {
+    const d = w - goal;
     const sign = d > 0 ? '+' : '';
-    diffHtml = `${sign}${d.toFixed(1)}<span class="unit">kg</span>`;
-    diffClass = d > 0.05 ? 'up' : d < -0.05 ? 'down' : 'flat';
+    goalLine = `<b>${sign}${d.toFixed(1)} kg</b>`;
   }
+  const bmrLine = bmr !== null ? `約${bmr.toLocaleString()} kcal` : '— <span style="color:var(--ink-faint);font-size:11px">（設定で身長・年齢を入力）</span>';
+  const tdeeLine = tdeeLo !== null ? `約${tdeeLo.toLocaleString()}〜${tdeeHi.toLocaleString()} kcal` : '—';
 
-  let togoalHtml = '—';
-  if (Number.isFinite(w) && Number.isFinite(goal)) {
-    const remain = w - goal;
-    togoalHtml = remain >= 0 ? `${remain.toFixed(1)}<span class="unit">kg</span>` : '達成 🎉';
+  // Meals
+  const mealsHtml = agg.meals.length
+    ? agg.meals.map(m => {
+        const tag = escapeHtml(m.label || '');
+        const cls = mealTagClass(m.label || '');
+        const text = escapeHtml(m.text || '');
+        const k = Number.isFinite(m.kcal) ? `約${m.kcal.toLocaleString()} kcal` : '';
+        const imgs = imageStripHtml(m.images);
+        return `<div class="meal-row">
+          <span class="meal-tag ${cls}">${tag}</span>
+          <span class="meal-text">${text}${imgs}</span>
+          <span class="meal-kcal">${k}</span>
+        </div>`;
+      }).join('')
+    : '<div style="color:var(--ink-faint);font-size:12px;text-align:center;padding:6px 0">記録なし</div>';
+  const mealTotalHtml = agg.mealTotal > 0
+    ? `<div class="meal-total">合計 約${agg.mealTotal.toLocaleString()} kcal</div>`
+    : '';
+
+  // Exercise: split morning vs evening, plus optional steps line
+  const stepsEv = exEvents.find(e =>
+    /歩|step/i.test(e.name || '') || /歩|step/i.test(e.value || '')
+  );
+  const otherEx = exEvents.filter(e => e !== stepsEv);
+  const morning = otherEx.filter(e => parseInt((e.time || '00:00').split(':')[0], 10) < 12);
+  const evening = otherEx.filter(e => parseInt((e.time || '00:00').split(':')[0], 10) >= 12);
+  const exItem = e => {
+    const k = parseFloat(e.kcal);
+    const kStr = Number.isFinite(k) ? ` <span style="color:#9a6b78">(${k} kcal)</span>` : '';
+    const t = e.time ? `<span style="color:#9a6b78">(${escapeHtml(e.time)})</span>` : '';
+    const valuePart = e.value ? ` <span style="color:#6b6b6b">${escapeHtml(e.value)}</span>` : '';
+    const imgs = imageStripHtml(e.images);
+    return `<div class="ex-item">・${escapeHtml(e.name || '')}${valuePart} ${t}${kStr}${imgs}</div>`;
+  };
+  let exBodyHtml = '';
+  if (stepsEv) {
+    const parts = [];
+    if (stepsEv.value) parts.push(escapeHtml(stepsEv.value));
+    if (!stepsEv.value && stepsEv.name) parts.push(escapeHtml(stepsEv.name));
+    exBodyHtml += `<div>・歩数: <b>${parts.join(' ') || '—'}</b></div>`;
   }
-
-  const start = firstRecordedWeight() ?? w;
-  let pct = 0;
-  if (Number.isFinite(w) && Number.isFinite(goal)) {
-    if (w <= goal) pct = 100;
-    else if (start > goal) pct = Math.max(0, Math.min(100, ((start - w) / (start - goal)) * 100));
+  if (morning.length || evening.length) {
+    exBodyHtml += `<div style="margin-top:4px">・運動内容:</div>`;
+    if (morning.length) {
+      exBodyHtml += `<div class="ex-group">▶ 午前</div>`;
+      exBodyHtml += morning.map(exItem).join('');
+    }
+    if (evening.length) {
+      exBodyHtml += `<div class="ex-group">▶ 夜</div>`;
+      exBodyHtml += evening.map(exItem).join('');
+    }
   }
+  if (!stepsEv && !morning.length && !evening.length) {
+    exBodyHtml = '<div style="color:var(--ink-faint);font-size:12px;text-align:center;padding:6px 0">記録なし</div>';
+  }
+  const exFootHtml = agg.exerciseTotal > 0
+    ? `<div class="ex-foot">運動消費: <b>約${agg.exerciseTotal.toLocaleString()} kcal</b></div>`
+    : '';
 
-  const moodLabel = MOOD_LABELS[agg.latestMood] || '—';
-  const weatherStr = agg.latestWeather
-    ? `${escapeHtml(agg.latestWeather.weather || '—')}`
-    : '—';
-  const tempStr = agg.latestWeather && agg.latestWeather.temp !== '' && Number.isFinite(parseFloat(agg.latestWeather.temp))
-    ? `${parseFloat(agg.latestWeather.temp)}°C`
-    : '—';
-
-  const checksHtml = Object.entries(CHECK_LABELS).map(([k, l]) =>
-    `<span class="chip ${agg.checksDone[k] ? 'on' : ''}">${agg.checksDone[k] ? '✓ ' : ''}${l}</span>`
+  // Habit chips
+  const habitHtml = Object.entries(CHECK_LABELS).map(([k, l]) =>
+    `<span class="habit-chip ${agg.checksDone[k] ? 'on' : ''}">${l}</span>`
   ).join('');
 
-  const mealsHtml = agg.meals.length
-    ? agg.meals.map(m =>
-        `<li><span><span class="tag">${escapeHtml(m.label)}</span>${escapeHtml(m.text)}${imageStripHtml(m.images)}</span><span>${Number.isFinite(m.kcal) ? m.kcal.toLocaleString() + ' kcal' : ''}</span></li>`
-      ).join('')
-    : '<li style="color:var(--ink-soft)">記録なし</li>';
+  // Balance
+  let balanceHtml = '';
+  if (tdeeLo !== null && agg.mealTotal > 0) {
+    const balLo = agg.mealTotal - tdeeHi - agg.exerciseTotal;
+    const balHi = agg.mealTotal - tdeeLo - agg.exerciseTotal;
+    balanceHtml = `<div class="balance-banner">今日の収支：<span class="num">${formatRange(balLo, balHi)}</span> kcal
+      <span class="balance-note">※カロリーは目安（食材・量で変動）</span>
+    </div>`;
+  }
 
-  const exHtml = agg.exercises.length
-    ? agg.exercises.map(e => {
-        const id = youtubeId(e.url);
-        const thumb = id ? `<img src="${youtubeThumb(id)}" alt="" loading="lazy" style="width:60px;height:34px;object-fit:cover;border-radius:3px;vertical-align:middle;margin-right:8px">` : '';
-        return `<li><span>${thumb}${escapeHtml(e.name)}${e.value ? ' <span style="color:var(--ink-soft)">' + escapeHtml(e.value) + '</span>' : ''}${imageStripHtml(e.images)}</span><span>${Number.isFinite(e.kcal) ? e.kcal.toLocaleString() + ' kcal' : ''}</span></li>`;
-      }).join('')
-    : '<li style="color:var(--ink-soft)">記録なし</li>';
+  // Notes
+  const hasNotes = todayNote || tomorrowNote;
+  const notesHtml = hasNotes
+    ? `<div class="notes-grid">
+        ${todayNote ? `<div class="note-card today"><h4>🌷 今日のまとめ</h4><p>${escapeHtml(todayNote)}</p></div>` : ''}
+        ${tomorrowNote ? `<div class="note-card tomorrow"><h4>💡 明日のポイント</h4><p>${escapeHtml(tomorrowNote)}</p></div>` : ''}
+      </div>`
+    : '';
+
+  // Header pill text (weather + mood)
+  const pillHtml = (weatherLabel || Number.isFinite(tempVal) || moodLabel)
+    ? `<div class="meta-pill">
+        ${(weatherLabel || Number.isFinite(tempVal)) ? `<div>${escapeHtml(weatherLabel)}${Number.isFinite(tempVal) ? ` ${tempVal}℃` : ''}</div>` : ''}
+        ${moodLabel ? `<div>${moodLabel}</div>` : ''}
+      </div>`
+    : '';
 
   body.innerHTML = `
-    <div class="top-info">
-      <h1>Daily Health Note</h1>
-      <div class="date">${currentDate.replace(/-/g, '.')}</div>
-      <div class="day">${dayJa(currentDate)}</div>
-    </div>
+    <div class="share-card" id="shareCard">
+      <div class="stripe"></div>
+      <div class="inner">
+        <div class="header-band">Daily Diet Log</div>
+        <div class="date-row">
+          <div class="big-date">${escapeHtml(dateStr)}</div>
+          ${pillHtml}
+        </div>
 
-    <h2>今日の情報</h2>
-    <div class="info-grid">
-      <div class="row"><span>天気</span><span>${weatherStr}</span></div>
-      <div class="row"><span>気温</span><span>${tempStr}</span></div>
-      <div class="row"><span>気分</span><span>${moodLabel}</span></div>
-    </div>
+        <div class="block with-icon">
+          <h3>weight</h3>
+          <ul class="bullets">
+            <li>本日の体重: ${weightLine}</li>
+            <li>前日比: ${diffLine}</li>
+            <li>目標(${Number.isFinite(goal) ? goal.toFixed(0) : '—'}kg)との差: ${goalLine}</li>
+            <li>基礎代謝(BMR): ${bmrLine}</li>
+            <li>総消費(目安): ${tdeeLine}</li>
+          </ul>
+          <div class="icon-art">⚖️</div>
+        </div>
 
-    <h2 style="margin-top:18px">体重</h2>
-    <div class="weight-grid">
-      <div class="weight-card">
-        <div class="label">今日</div>
-        <div class="value">${Number.isFinite(w) ? w.toFixed(1) : '—'}<span class="unit">kg</span></div>
+        <div class="block section">
+          <h3>食事（摂取カロリー）</h3>
+          ${mealsHtml}
+          ${mealTotalHtml}
+        </div>
+
+        <div class="block section with-icon">
+          <h3>運動・活動</h3>
+          <div class="ex-section">${exBodyHtml}</div>
+          ${exFootHtml}
+          <div class="icon-art">👟</div>
+        </div>
+
+        <div class="habit-banner">
+          <h3>habit</h3>
+          <div class="habit-chips">${habitHtml}</div>
+        </div>
+
+        ${balanceHtml}
+        ${notesHtml}
+
+        <div class="small-foot">Daily Health · ${formatDateJa(currentDate)}</div>
       </div>
-      <div class="weight-card">
-        <div class="label">前日比</div>
-        <div class="value ${diffClass}">${diffHtml}</div>
-      </div>
-      <div class="weight-card">
-        <div class="label">目標まで</div>
-        <div class="value">${togoalHtml}</div>
-      </div>
+      <div class="stripe"></div>
     </div>
-    <div class="goal-bar"><span style="width:${pct}%"></span></div>
-
-    <h2 style="margin-top:18px">出来たことチェック</h2>
-    <div class="check-grid">${checksHtml}</div>
-
-    <h2 style="margin-top:18px">食事</h2>
-    <ul class="meal-list">${mealsHtml}</ul>
-    ${agg.mealTotal > 0 ? `<div class="total">トータル <span class="num">${agg.mealTotal.toLocaleString()}</span> kcal</div>` : ''}
-
-    <h2 style="margin-top:18px">運動</h2>
-    <ul class="ex-list">${exHtml}</ul>
-    ${agg.exerciseTotal > 0 ? `<div class="total">総消費カロリー <span class="num">${agg.exerciseTotal.toLocaleString()}</span> kcal</div>` : ''}
-
-    <footer>WEIGHT GOAL · ${Number.isFinite(goal) ? goal.toFixed(1) : '—'} KG</footer>
   `;
   populateImageThumbnails(body);
+}
+
+function buildShareText() {
+  const { agg, w, goal, pw, bmr, tdeeLo, tdeeHi, exEvents, todayNote, tomorrowNote } = buildShareData();
+  const lines = [];
+  lines.push(`📔 Daily Diet Log  ${formatDateJa(currentDate)}`);
+  if (agg.latestWeather) {
+    const t = parseFloat(agg.latestWeather.temp);
+    lines.push(`${agg.latestWeather.weather || ''}${Number.isFinite(t) ? ` ${t}℃` : ''}  ${MOOD_LABELS[agg.latestMood] || ''}`.trim());
+  }
+  lines.push('');
+  lines.push('【weight】');
+  if (Number.isFinite(w)) lines.push(`・本日の体重 ${w.toFixed(1)} kg`);
+  if (Number.isFinite(w) && Number.isFinite(pw)) {
+    const d = w - pw;
+    const sign = d > 0 ? '+' : d < 0 ? '−' : '±';
+    lines.push(`・前日比 ${sign}${Math.abs(d).toFixed(1)} kg`);
+  }
+  if (Number.isFinite(w) && Number.isFinite(goal)) {
+    const d = w - goal;
+    const sign = d > 0 ? '+' : '';
+    lines.push(`・目標(${goal.toFixed(0)}kg)との差 ${sign}${d.toFixed(1)} kg`);
+  }
+  if (bmr !== null) lines.push(`・BMR 約${bmr.toLocaleString()} kcal`);
+  if (tdeeLo !== null) lines.push(`・総消費目安 約${tdeeLo.toLocaleString()}〜${tdeeHi.toLocaleString()} kcal`);
+  if (agg.meals.length) {
+    lines.push('');
+    lines.push('【食事】');
+    agg.meals.forEach(m => {
+      const k = Number.isFinite(m.kcal) ? ` 約${m.kcal} kcal` : '';
+      lines.push(`・${m.label || ''} ${m.text || ''}${k}`.trim());
+    });
+    if (agg.mealTotal > 0) lines.push(`合計 約${agg.mealTotal.toLocaleString()} kcal`);
+  }
+  if (exEvents.length) {
+    lines.push('');
+    lines.push('【運動】');
+    exEvents.forEach(e => {
+      const k = Number.isFinite(parseFloat(e.kcal)) ? ` (${e.kcal}kcal)` : '';
+      lines.push(`・${e.name || ''}${e.value ? ' ' + e.value : ''}${k}`);
+    });
+    if (agg.exerciseTotal > 0) lines.push(`運動消費 約${agg.exerciseTotal.toLocaleString()} kcal`);
+  }
+  const habitsOn = Object.entries(CHECK_LABELS).filter(([k]) => agg.checksDone[k]).map(([, l]) => l);
+  if (habitsOn.length) {
+    lines.push('');
+    lines.push(`【habit】 ${habitsOn.map(l => '✓' + l).join(' ')}`);
+  }
+  if (tdeeLo !== null && agg.mealTotal > 0) {
+    const balLo = agg.mealTotal - tdeeHi - agg.exerciseTotal;
+    const balHi = agg.mealTotal - tdeeLo - agg.exerciseTotal;
+    lines.push('');
+    lines.push(`今日の収支: ${formatRange(balLo, balHi)} kcal`);
+  }
+  if (todayNote) { lines.push(''); lines.push(`🌷 今日のまとめ`); lines.push(todayNote); }
+  if (tomorrowNote) { lines.push(''); lines.push(`💡 明日のポイント`); lines.push(tomorrowNote); }
+  return lines.join('\n');
+}
+
+async function shareCardText() {
+  const text = buildShareText();
+  if (navigator.share) {
+    try { await navigator.share({ text, title: `Daily Diet Log ${currentDate}` }); return; }
+    catch (e) { if (e && e.name === 'AbortError') return; }
+  }
+  await copyShareText();
+}
+
+async function copyShareText() {
+  const text = buildShareText();
+  try {
+    await navigator.clipboard.writeText(text);
+    setStatus('テキストをコピーしました ✓');
+  } catch {
+    alert(text);
+  }
 }
 
 //===================== History =====================
@@ -2080,6 +2503,14 @@ function bindInputs() {
     settings.goalWeight = e.target.value;
     saveSettings();
   };
+  document.getElementById('f_height').oninput = e => {
+    settings.height = e.target.value;
+    saveSettings();
+  };
+  document.getElementById('f_age').oninput = e => {
+    settings.age = e.target.value;
+    saveSettings();
+  };
 
   document.querySelectorAll('#addChips .add-chip').forEach(chip => {
     chip.onclick = () => {
@@ -2117,6 +2548,9 @@ function bindInputs() {
       setStatus(storage.mode === 'opfs' ? '準備完了' : '準備完了（localStorage）');
     }
   };
+
+  document.getElementById('copyTextBtn').onclick = copyShareText;
+  document.getElementById('shareBtn').onclick = shareCardText;
 
   document.getElementById('clearDayBtn').onclick = async () => {
     if (!confirm(`${currentDate} のデータを消去しますか？`)) return;
