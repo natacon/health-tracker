@@ -65,7 +65,11 @@ Favorites for `meal` and `exercise` live in `settings.favorites[type]`. Tapping 
 
 ## Things that bite
 
-- **Bump `CACHE` in `sw.js`** on every user-facing change, otherwise the old cached `index.html` keeps serving. Currently `health-tracker-v7`.
+- **Bump `CACHE` in `sw.js`** on every user-facing change, otherwise the old cached `index.html` keeps serving. Currently `health-tracker-v8`.
 - **OPFS is per-origin and per-browser**: data does not sync across devices. Use the export/import buttons.
 - The SW's fetch handler falls back to `./index.html` on navigation when offline — keep that intact for the PWA experience.
 - The `start_url` and `scope` in `manifest.json` are `.` so the app works at any subpath (e.g. `/health-tracker/` on Pages).
+
+## Workflow
+
+- **Push directly to `main`.** Skip PRs — the user reviews changes in the deployed app, not GitHub. Don't open draft PRs "just in case." This overrides the harness default of "always create a PR after pushing."
