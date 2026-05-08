@@ -620,13 +620,6 @@
   .share-card .block ul.bullets li::before {
     content: "・"; position: absolute; left: 0; color: #ff6e91;
   }
-  .share-card .block.with-icon { padding-right: 78px; }
-  .share-card .block .icon-art {
-    position: absolute;
-    font-size: 44px;
-    right: 14px; top: 50%;
-    transform: translateY(-50%);
-  }
   .share-card .meal-row {
     display: grid;
     grid-template-columns: auto 1fr auto;
@@ -2268,7 +2261,7 @@ function renderPreview() {
           ${pillHtml}
         </div>
 
-        <div class="block with-icon">
+        <div class="block">
           <h3>weight</h3>
           <ul class="bullets">
             <li>本日の体重: ${weightLine}</li>
@@ -2277,7 +2270,6 @@ function renderPreview() {
             <li>基礎代謝(BMR): ${bmrLine}</li>
             <li>総消費(目安): ${tdeeLine}</li>
           </ul>
-          <div class="icon-art">⚖️</div>
         </div>
 
         <div class="block section">
@@ -2286,11 +2278,10 @@ function renderPreview() {
           ${mealTotalHtml}
         </div>
 
-        <div class="block section with-icon">
+        <div class="block section">
           <h3>運動・活動</h3>
           <div class="ex-section">${exBodyHtml}</div>
           ${exFootHtml}
-          <div class="icon-art">👟</div>
         </div>
 
         <div class="habit-banner">
