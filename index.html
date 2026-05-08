@@ -423,11 +423,6 @@
     object-fit: cover; border-radius: 4px;
     display: block;
   }
-  .tl-event .body .ex-link {
-    margin-left: 6px; color: var(--ink-soft);
-    text-decoration: none;
-  }
-  .tl-event .body .ex-link:hover { color: var(--accent); }
 
   .thumb-preview { margin-top: 6px; }
   .thumb-preview img {
@@ -1981,8 +1976,7 @@ function eventBodyHtml(e) {
     const k = parseFloat(e.kcal);
     const id = youtubeId(e.url);
     const thumb = id ? `<a href="${escapeHtml(e.url)}" target="_blank" rel="noopener" class="ex-thumb"><img src="${youtubeThumb(id)}" alt="" loading="lazy"></a>` : '';
-    const link = e.url && !id ? `<a href="${escapeHtml(e.url)}" target="_blank" rel="noopener" class="ex-link" title="${escapeHtml(e.url)}">🔗</a>` : '';
-    const main = `${thumb}<b>${escapeHtml(e.name || '')}</b>${e.value ? ` <span class="sub">${escapeHtml(e.value)}</span>` : ''}${Number.isFinite(k) ? ` <span class="kcal">${k.toLocaleString()} kcal</span>` : ''}${link}`;
+    const main = `${thumb}<b>${escapeHtml(e.name || '')}</b>${e.value ? ` <span class="sub">${escapeHtml(e.value)}</span>` : ''}${Number.isFinite(k) ? ` <span class="kcal">${k.toLocaleString()} kcal</span>` : ''}`;
     return main + imageStripHtml(e.images);
   }
   if (e.type === 'mood') return `${MOOD_LABELS[e.value] || '—'}`;
