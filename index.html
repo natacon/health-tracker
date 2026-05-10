@@ -1500,7 +1500,7 @@ function buildAddForm(type, prefill = null) {
         </div>
       </div>
       <div class="field"><label>内容</label><input type="text" data-f="text" placeholder="オートミール" value="${escapeHtml(prefill?.text ?? '')}"></div>
-      <div class="field"><label>kcal</label><input type="number" data-f="kcal" placeholder="180" value="${prefill?.kcal ?? ''}"><span class="unit">kcal</span><button type="button" class="ghost" data-act="estimate-kcal" title="Googleで検索">🔍 Google</button></div>
+      <div class="field"><label>kcal</label><input type="number" data-f="kcal" placeholder="180" value="${prefill?.kcal ?? ''}"><span class="unit">kcal</span><button type="button" class="ghost" data-act="estimate-kcal" title="自動取得（Open Food Facts / Wikipedia / 運動はMET推定）">🔍 推定</button></div>
       ${imagePickerHtml()}
     `;
   } else if (type === 'exercise') {
@@ -1508,7 +1508,7 @@ function buildAddForm(type, prefill = null) {
       <div class="field"><label>時刻</label><input type="time" data-f="time" value="${time}"></div>
       <div class="field"><label>種目</label><input type="text" data-f="name" placeholder="歩数 / YouTube など" value="${escapeHtml(prefill?.name ?? '')}"></div>
       <div class="field"><label>内容</label><input type="text" data-f="value" placeholder="8,420歩 / 20分" value="${escapeHtml(prefill?.value ?? '')}"></div>
-      <div class="field"><label>消費kcal</label><input type="number" data-f="kcal" placeholder="200" value="${prefill?.kcal ?? ''}"><span class="unit">kcal</span><button type="button" class="ghost" data-act="estimate-kcal" title="Googleで検索">🔍 Google</button></div>
+      <div class="field"><label>消費kcal</label><input type="number" data-f="kcal" placeholder="200" value="${prefill?.kcal ?? ''}"><span class="unit">kcal</span><button type="button" class="ghost" data-act="estimate-kcal" title="自動取得（Open Food Facts / Wikipedia / 運動はMET推定）">🔍 推定</button></div>
       <div class="field"><label>URL</label><input type="url" data-f="url" placeholder="YouTubeリンクなど" value="${escapeHtml(prefill?.url ?? '')}"></div>
       <div class="thumb-preview" data-thumb-preview></div>
       ${imagePickerHtml()}
@@ -1656,7 +1656,7 @@ function openAddForm(type, prefill = null) {
   if (favSaveBtn) favSaveBtn.onclick = saveFavoriteFromForm;
 
   const estimateBtn = form.querySelector('[data-act="estimate-kcal"]');
-  if (estimateBtn) estimateBtn.onclick = () => openKcalSearch(form, type);
+  if (estimateBtn) estimateBtn.onclick = () => runKcalLookup(form, type, estimateBtn);
 
   bindFavChips(type);
 
@@ -1764,21 +1764,170 @@ function bindImagePicker(form) {
   renderFormImageStrip();
 }
 
-function openKcalSearch(form, type) {
+//===================== Kcal lookup (free, CORS-friendly sources) =====================
+// Direct Google search is blocked by CORS, so we hit Open Food Facts and Wikipedia
+// instead and parse out the first plausible kcal number. Falls back to opening
+// Google search in a new tab when nothing usable is found.
+
+const KCAL_NUM_RE = /(\d{2,4})(?:\s|　)*(?:kcal|キロカロリー|カロリー)/i;
+
+function pickKcalFromText(s) {
+  if (!s) return null;
+  const m = String(s).match(KCAL_NUM_RE);
+  if (!m) return null;
+  const n = parseInt(m[1], 10);
+  return n > 0 && n < 5000 ? n : null;
+}
+
+function latestKnownWeight() {
+  if (Array.isArray(entry?.events)) {
+    const w = entry.events.filter(e => e.type === 'weight' && Number.isFinite(e.value));
+    if (w.length) return w[w.length - 1].value;
+  }
+  for (const d of Object.keys(cache).sort().reverse()) {
+    const evs = cache[d]?.events;
+    if (!Array.isArray(evs)) continue;
+    const w = evs.filter(e => e.type === 'weight' && Number.isFinite(e.value));
+    if (w.length) return w[w.length - 1].value;
+  }
+  return null;
+}
+
+async function fetchKcalFromOpenFoodFacts(query) {
+  try {
+    const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&json=1&page_size=5&fields=product_name,energy-kcal_100g,energy-kcal_serving,serving_size`;
+    const r = await fetch(url);
+    if (!r.ok) return null;
+    const data = await r.json();
+    for (const p of data.products || []) {
+      const k = p['energy-kcal_serving'] || p['energy-kcal_100g'];
+      if (Number.isFinite(k) && k > 0 && k < 5000) return Math.round(k);
+    }
+  } catch {}
+  return null;
+}
+
+async function fetchKcalFromWikipedia(query) {
+  try {
+    const sUrl = `https://ja.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&srlimit=3&format=json&origin=*`;
+    const sr = await fetch(sUrl);
+    if (!sr.ok) return null;
+    const sdata = await sr.json();
+    const hits = sdata.query?.search || [];
+    for (const hit of hits) {
+      const k = pickKcalFromText(hit.snippet);
+      if (k) return k;
+      const eUrl = `https://ja.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext=1&exintro=&titles=${encodeURIComponent(hit.title)}&format=json&origin=*`;
+      const er = await fetch(eUrl);
+      if (!er.ok) continue;
+      const edata = await er.json();
+      const page = Object.values(edata.query?.pages || {})[0];
+      const k2 = pickKcalFromText(page?.extract);
+      if (k2) return k2;
+    }
+  } catch {}
+  return null;
+}
+
+async function lookupMealKcal(text) {
+  const q = (text || '').trim();
+  if (!q) throw new Error('内容を入力してから検索してください');
+  return (await fetchKcalFromOpenFoodFacts(q))
+      ?? (await fetchKcalFromWikipedia(q + ' カロリー'))
+      ?? (await fetchKcalFromWikipedia(q));
+}
+
+const MET_DICT = [
+  [/(?:ヨガ|ピラ|ストレッチ|柔軟)/i, 3.0],
+  [/(?:ウォーキング|散歩|歩く|ウォーク)/i, 3.5],
+  [/(?:ジョギング|ジョグ|軽いラン)/i, 6.0],
+  [/(?:ランニング|ラン|走る|マラソン)/i, 8.0],
+  [/(?:ダッシュ|スプリント|hiit|高強度|タバタ)/i, 8.5],
+  [/(?:筋トレ|ウエイト|スクワット|腕立て|腹筋|プランク|体幹)/i, 5.0],
+  [/(?:ダンス|エアロ|zumba|ズンバ)/i, 6.0],
+  [/(?:サイクリング|自転車|バイク|スピン)/i, 6.0],
+  [/(?:水泳|スイミング|プール)/i, 7.0],
+  [/(?:縄跳び|ジャンプロープ)/i, 10.0],
+  [/(?:登山|ハイキング)/i, 6.5],
+  [/(?:なわとび|jump rope)/i, 10.0],
+  [/(?:有酸素|カーディオ|cardio)/i, 6.0]
+];
+
+function detectMET(name, value) {
+  const haystack = `${name || ''} ${value || ''}`;
+  for (const [re, met] of MET_DICT) {
+    if (re.test(haystack)) return met;
+  }
+  return 5.0; // default for unrecognized workouts
+}
+
+function detectMinutes(value) {
+  if (!value) return null;
+  const m1 = String(value).match(/(\d+(?:\.\d+)?)\s*時間/);
+  const m2 = String(value).match(/(\d+(?:\.\d+)?)\s*(?:分|min)/i);
+  let mins = 0;
+  if (m1) mins += parseFloat(m1[1]) * 60;
+  if (m2) mins += parseFloat(m2[1]);
+  return mins > 0 ? mins : null;
+}
+
+async function lookupExerciseKcal(name, value) {
+  const n = (name || '').trim();
+  if (!n) throw new Error('種目を入力してから検索してください');
+  const minutes = detectMinutes(value);
+  if (!minutes) throw new Error('内容に「20分」「30分」など継続時間を入れて下さい');
+  const met = detectMET(n, value);
+  const weight = latestKnownWeight() || 50;
+  return Math.round(met * weight * (minutes / 60));
+}
+
+function openGoogleSearchFallback(type, form) {
   let q;
   if (type === 'meal') {
     const text = (form.querySelector('[data-f="text"]')?.value || '').trim();
-    if (!text) { alert('内容を入力してから検索してください'); return; }
     q = `${text} カロリー`;
   } else if (type === 'exercise') {
     const name = (form.querySelector('[data-f="name"]')?.value || '').trim();
-    const value = (form.querySelector('[data-f="value"]')?.value || '').trim();
-    if (!name) { alert('種目を入力してから検索してください'); return; }
-    q = `${name}${value ? ' ' + value : ''} 消費カロリー`;
-  } else {
-    return;
+    const v = (form.querySelector('[data-f="value"]')?.value || '').trim();
+    q = `${name}${v ? ' ' + v : ''} 消費カロリー`;
   }
   window.open(`https://www.google.com/search?q=${encodeURIComponent(q)}`, '_blank', 'noopener');
+}
+
+async function runKcalLookup(form, type, btn) {
+  const kcalInput = form.querySelector('[data-f="kcal"]');
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '検索中…';
+  try {
+    let n = null;
+    if (type === 'meal') {
+      n = await lookupMealKcal(form.querySelector('[data-f="text"]')?.value || '');
+    } else if (type === 'exercise') {
+      n = await lookupExerciseKcal(
+        form.querySelector('[data-f="name"]')?.value || '',
+        form.querySelector('[data-f="value"]')?.value || ''
+      );
+    }
+    if (Number.isFinite(n) && kcalInput) {
+      kcalInput.value = n;
+      kcalInput.dispatchEvent(new Event('input', { bubbles: true }));
+      setStatus('推定 ✓');
+      return;
+    }
+    if (confirm('値が見つかりませんでした。Google検索を開きますか？')) {
+      openGoogleSearchFallback(type, form);
+    }
+    setStatus('—');
+  } catch (e) {
+    if (confirm(`${e.message || '取得失敗'}\nGoogle検索を開きますか？`)) {
+      openGoogleSearchFallback(type, form);
+    }
+    setStatus('—');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = original;
+  }
 }
 
 function bindFavChips(type) {
