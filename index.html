@@ -1296,6 +1296,16 @@ const MOOD_LABELS = {
 
 const MEAL_LABELS = ['朝', '昼', '夜', '間食', '運動後'];
 
+function mealLabelForTime(time) {
+  const m = String(time || '').match(/^(\d{1,2}):(\d{2})/);
+  if (!m) return '';
+  const mins = parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+  if (mins >= 240 && mins < 630) return '朝';      // 04:00–10:29
+  if (mins >= 630 && mins < 840) return '昼';      // 10:30–13:59
+  if (mins >= 1020 && mins < 1350) return '夜';    // 17:00–22:29
+  return '間食';                                    // それ以外
+}
+
 //===================== State =====================
 let currentDate = todayStr();
 let entry = { events: [] };
@@ -1481,11 +1491,12 @@ function buildAddForm(type, prefill = null) {
       <div class="field"><label>体重</label><input type="number" step="0.1" data-f="value" placeholder="48.2" value="${prefill?.value ?? ''}"><span class="unit">kg</span></div>
     `;
   } else if (type === 'meal') {
+    const defaultLabel = prefill?.label ?? mealLabelForTime(time);
     inner = `
       <div class="field"><label>時刻</label><input type="time" data-f="time" value="${time}"></div>
       <div class="field"><label>区分</label>
         <div class="seg" data-seg="label">
-          ${MEAL_LABELS.map(l => `<button type="button" class="${prefill?.label === l ? 'on' : ''}" data-val="${l}">${l}</button>`).join('')}
+          ${MEAL_LABELS.map(l => `<button type="button" class="${defaultLabel === l ? 'on' : ''}" data-val="${l}">${l}</button>`).join('')}
         </div>
       </div>
       <div class="field"><label>内容</label><input type="text" data-f="text" placeholder="オートミール" value="${escapeHtml(prefill?.text ?? '')}"></div>
@@ -1648,6 +1659,26 @@ function openAddForm(type, prefill = null) {
   if (estimateBtn) estimateBtn.onclick = () => openKcalSearch(form, type);
 
   bindFavChips(type);
+
+  // 時刻 → 食事区分の自動選択（ユーザーが手動で区分を選んだら追従しない）
+  if (type === 'meal') {
+    const timeInput = form.querySelector('[data-f="time"]');
+    const labelSeg = form.querySelector('[data-seg="label"]');
+    if (timeInput && labelSeg) {
+      let userPickedLabel = !!prefill?.label;
+      labelSeg.querySelectorAll('button').forEach(b => {
+        b.addEventListener('click', () => { userPickedLabel = true; });
+      });
+      timeInput.addEventListener('input', () => {
+        if (userPickedLabel) return;
+        const want = mealLabelForTime(timeInput.value);
+        if (!want) return;
+        labelSeg.querySelectorAll('button').forEach(b => {
+          b.classList.toggle('on', b.dataset.val === want);
+        });
+      });
+    }
+  }
 
   // URL → YouTubeサムネ即時プレビュー
   const urlInput = form.querySelector('[data-f="url"]');
