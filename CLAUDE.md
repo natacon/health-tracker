@@ -62,11 +62,11 @@ Favorites for `meal` and `exercise` live in `settings.favorites[type]`. Tapping 
 
 - **Tokyo weather**: Open-Meteo (`api.open-meteo.com`), no key. Auto-fetched once per day (gated by `AUTO_WEATHER_FLAG_KEY`) when viewing today and no weather event exists.
 - **YouTube thumbnails**: `img.youtube.com/vi/{id}/mqdefault.jpg` — public, no API. `youtubeId()` parses watch/youtu.be/shorts/embed URLs.
-- **Kcal estimation**: `🔍 推定` button in meal/exercise add forms calls Claude (Haiku 4.5) or ChatGPT (gpt-4o-mini) directly from the browser. API key is stored in `settings.apiKey` (localStorage). Anthropic requires `anthropic-dangerous-direct-browser-access: true`; both providers are intentional cross-origin calls and bypass the SW.
+- **Kcal lookup**: `🔍 Google` button in meal/exercise add forms opens Google search in a new tab (e.g. `内容 カロリー`). User reads result, types kcal back manually. No API key, no auto-fill — explicitly per-entry search.
 
 ## Things that bite
 
-- **Bump `CACHE` in `sw.js`** on every user-facing change, otherwise the old cached `index.html` keeps serving. Currently `health-tracker-v11`.
+- **Bump `CACHE` in `sw.js`** on every user-facing change, otherwise the old cached `index.html` keeps serving. Currently `health-tracker-v12`.
 - **OPFS is per-origin and per-browser**: data does not sync across devices. Use the export/import buttons.
 - The SW's fetch handler falls back to `./index.html` on navigation when offline — keep that intact for the PWA experience.
 - The `start_url` and `scope` in `manifest.json` are `.` so the app works at any subpath (e.g. `/health-tracker/` on Pages).
