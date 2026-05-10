@@ -62,11 +62,14 @@ Favorites for `meal` and `exercise` live in `settings.favorites[type]`. Tapping 
 
 - **Tokyo weather**: Open-Meteo (`api.open-meteo.com`), no key. Hourly endpoint, picking the 12:00 (noon) slot of the displayed date. Auto-fetched once per day (gated by `AUTO_WEATHER_FLAG_KEY`) when viewing today and no weather event exists. Stored with `time: '12:00'`.
 - **YouTube thumbnails**: `img.youtube.com/vi/{id}/mqdefault.jpg` — public, no API. `youtubeId()` parses watch/youtu.be/shorts/embed URLs.
-- **Kcal lookup**: `🔍 Google` button in meal/exercise add forms opens Google search in a new tab (e.g. `内容 カロリー`). User reads result, types kcal back manually. No API key, no auto-fill — explicitly per-entry search.
+- **Kcal lookup**: `🔍 推定` button in meal/exercise add forms tries to auto-fill kcal:
+  - Meal: Open Food Facts search → ja.wikipedia search/extract — first plausible `<n>kcal` wins.
+  - Exercise: hardcoded MET dictionary keyed on workout name + `<n>分` duration in the value field, multiplied by latest known body weight (default 50kg).
+  - On miss/error, prompts the user and opens Google search in a new tab as fallback. Direct Google scraping isn't possible from JS (CORS).
 
 ## Things that bite
 
-- **Bump `CACHE` in `sw.js`** on every user-facing change, otherwise the old cached `index.html` keeps serving. Currently `health-tracker-v14`.
+- **Bump `CACHE` in `sw.js`** on every user-facing change, otherwise the old cached `index.html` keeps serving. Currently `health-tracker-v15`.
 - **OPFS is per-origin and per-browser**: data does not sync across devices. Use the export/import buttons.
 - The SW's fetch handler falls back to `./index.html` on navigation when offline — keep that intact for the PWA experience.
 - The `start_url` and `scope` in `manifest.json` are `.` so the app works at any subpath (e.g. `/health-tracker/` on Pages).
