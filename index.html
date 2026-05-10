@@ -1382,15 +1382,18 @@ const WMO_LABELS = {
 };
 function weatherCodeToLabel(code) { return WMO_LABELS[code] || '—'; }
 
-async function fetchTokyoWeather() {
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${TOKYO_LAT}&longitude=${TOKYO_LON}&current=temperature_2m,weather_code&timezone=Asia/Tokyo`;
+async function fetchTokyoWeather(date) {
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${TOKYO_LAT}&longitude=${TOKYO_LON}&hourly=temperature_2m,weather_code&timezone=Asia/Tokyo&start_date=${date}&end_date=${date}`;
   const resp = await fetch(url, { cache: 'no-store' });
   if (!resp.ok) throw new Error(`weather HTTP ${resp.status}`);
   const data = await resp.json();
-  if (!data.current) throw new Error('no current data');
+  const times = data.hourly?.time;
+  if (!Array.isArray(times)) throw new Error('no hourly data');
+  const idx = times.findIndex(t => t === `${date}T12:00`);
+  if (idx < 0) throw new Error('no noon slot');
   return {
-    label: weatherCodeToLabel(data.current.weather_code),
-    temp: data.current.temperature_2m
+    label: weatherCodeToLabel(data.hourly.weather_code[idx]),
+    temp: data.hourly.temperature_2m[idx]
   };
 }
 
@@ -1398,15 +1401,15 @@ async function logCurrentWeather() {
   const targetDate = currentDate;
   setStatus('天気取得中…');
   try {
-    const w = await fetchTokyoWeather();
+    const w = await fetchTokyoWeather(targetDate);
     if (currentDate !== targetDate) return false;
     entry.events.push({
       id: uid(),
-      time: nowTimeForDate(currentDate),
+      time: '12:00',
       type: 'weather',
       weather: w.label,
       temp: w.temp,
-      source: 'open-meteo:tokyo'
+      source: 'open-meteo:tokyo:noon'
     });
     renderTimeline();
     scheduleSave();
@@ -1425,16 +1428,16 @@ async function autoFetchWeatherIfNeeded() {
   if (entry.events.some(e => e.type === 'weather')) return;
   const targetDate = currentDate;
   try {
-    const w = await fetchTokyoWeather();
+    const w = await fetchTokyoWeather(targetDate);
     if (currentDate !== targetDate) return;
     if (entry.events.some(e => e.type === 'weather')) return;
     entry.events.push({
       id: uid(),
-      time: nowTimeForDate(currentDate),
+      time: '12:00',
       type: 'weather',
       weather: w.label,
       temp: w.temp,
-      source: 'open-meteo:tokyo'
+      source: 'open-meteo:tokyo:noon'
     });
     localStorage.setItem(AUTO_WEATHER_FLAG_KEY, todayStr());
     renderTimeline();
