@@ -66,10 +66,12 @@ Favorites for `meal` and `exercise` live in `settings.favorites[type]`. Tapping 
   - Meal: Open Food Facts search → ja.wikipedia search/extract — first plausible `<n>kcal` wins.
   - Exercise: hardcoded MET dictionary keyed on workout name + `<n>分` duration in the value field, multiplied by latest known body weight (default 50kg).
   - On miss/error, prompts the user and opens Google search in a new tab as fallback. Direct Google scraping isn't possible from JS (CORS).
+- **Meal text autocomplete**: 内容 field is a `<datalist>`-backed combobox showing every `★いつもの` meal text. Picking a known entry also auto-fills 区分 + kcal.
+- **Exercise OCR**: Tesseract.js (v5, lazy-loaded from jsDelivr) runs Japanese OCR on the first picked image and writes the result into the 種目 field if it's empty. Useful for YouTube watch-history screenshots.
 
 ## Things that bite
 
-- **Bump `CACHE` in `sw.js`** on every user-facing change, otherwise the old cached `index.html` keeps serving. Currently `health-tracker-v15`.
+- **Bump `CACHE` in `sw.js`** on every user-facing change, otherwise the old cached `index.html` keeps serving. Currently `health-tracker-v16`.
 - **OPFS is per-origin and per-browser**: data does not sync across devices. Use the export/import buttons.
 - The SW's fetch handler falls back to `./index.html` on navigation when offline — keep that intact for the PWA experience.
 - The `start_url` and `scope` in `manifest.json` are `.` so the app works at any subpath (e.g. `/health-tracker/` on Pages).

@@ -1492,26 +1492,29 @@ function buildAddForm(type, prefill = null) {
     `;
   } else if (type === 'meal') {
     const defaultLabel = prefill?.label ?? mealLabelForTime(time);
+    const favs = (settings.favorites?.meal || []);
+    const favTexts = [...new Set(favs.map(f => (f.text || '').trim()).filter(Boolean))];
     inner = `
+      <div class="field"><label>内容</label><input type="text" data-f="text" list="mealTextList" placeholder="オートミール" value="${escapeHtml(prefill?.text ?? '')}"></div>
+      <datalist id="mealTextList">${favTexts.map(t => `<option value="${escapeHtml(t)}"></option>`).join('')}</datalist>
       <div class="field"><label>時刻</label><input type="time" data-f="time" value="${time}"></div>
       <div class="field"><label>区分</label>
         <div class="seg" data-seg="label">
           ${MEAL_LABELS.map(l => `<button type="button" class="${defaultLabel === l ? 'on' : ''}" data-val="${l}">${l}</button>`).join('')}
         </div>
       </div>
-      <div class="field"><label>内容</label><input type="text" data-f="text" placeholder="オートミール" value="${escapeHtml(prefill?.text ?? '')}"></div>
       <div class="field"><label>kcal</label><input type="number" data-f="kcal" placeholder="180" value="${prefill?.kcal ?? ''}"><span class="unit">kcal</span><button type="button" class="ghost" data-act="estimate-kcal" title="自動取得（Open Food Facts / Wikipedia / 運動はMET推定）">🔍 推定</button></div>
       ${imagePickerHtml()}
     `;
   } else if (type === 'exercise') {
     inner = `
-      <div class="field"><label>時刻</label><input type="time" data-f="time" value="${time}"></div>
+      ${imagePickerHtml()}
       <div class="field"><label>種目</label><input type="text" data-f="name" placeholder="歩数 / YouTube など" value="${escapeHtml(prefill?.name ?? '')}"></div>
       <div class="field"><label>内容</label><input type="text" data-f="value" placeholder="8,420歩 / 20分" value="${escapeHtml(prefill?.value ?? '')}"></div>
+      <div class="field"><label>時刻</label><input type="time" data-f="time" value="${time}"></div>
       <div class="field"><label>消費kcal</label><input type="number" data-f="kcal" placeholder="200" value="${prefill?.kcal ?? ''}"><span class="unit">kcal</span><button type="button" class="ghost" data-act="estimate-kcal" title="自動取得（Open Food Facts / Wikipedia / 運動はMET推定）">🔍 推定</button></div>
       <div class="field"><label>URL</label><input type="url" data-f="url" placeholder="YouTubeリンクなど" value="${escapeHtml(prefill?.url ?? '')}"></div>
       <div class="thumb-preview" data-thumb-preview></div>
-      ${imagePickerHtml()}
     `;
   } else if (type === 'mood') {
     inner = `
@@ -1633,7 +1636,7 @@ function openAddForm(type, prefill = null) {
   document.querySelectorAll('#addChips .add-chip').forEach(c =>
     c.classList.toggle('active', c.dataset.type === type));
 
-  bindImagePicker(form);
+  bindImagePicker(form, type);
 
   // bind seg buttons
   form.querySelectorAll('.seg').forEach(seg => {
@@ -1677,6 +1680,27 @@ function openAddForm(type, prefill = null) {
           b.classList.toggle('on', b.dataset.val === want);
         });
       });
+    }
+    // 内容（datalist）が ★いつもの と一致したら kcal/区分 を自動補完
+    const textInput = form.querySelector('[data-f="text"]');
+    if (textInput) {
+      const applyFavMatch = () => {
+        const v = textInput.value.trim();
+        if (!v) return;
+        const fav = (settings.favorites?.meal || []).find(f => (f.text || '').trim() === v);
+        if (!fav) return;
+        const kcalInput = form.querySelector('[data-f="kcal"]');
+        if (kcalInput && !kcalInput.value && Number.isFinite(parseFloat(fav.kcal))) {
+          kcalInput.value = fav.kcal;
+        }
+        if (labelSeg && fav.label) {
+          labelSeg.querySelectorAll('button').forEach(b => {
+            b.classList.toggle('on', b.dataset.val === fav.label);
+          });
+        }
+      };
+      textInput.addEventListener('change', applyFavMatch);
+      textInput.addEventListener('input', applyFavMatch);
     }
   }
 
@@ -1734,7 +1758,7 @@ async function renderFormImageStrip() {
   });
 }
 
-function bindImagePicker(form) {
+function bindImagePicker(form, type) {
   const input = form.querySelector('[data-img-input]');
   if (!input) return;
   input.onchange = async ev => {
@@ -1745,23 +1769,63 @@ function bindImagePicker(form) {
       return;
     }
     setStatus('画像を処理中…');
+    let firstNewBlob = null;
     for (const f of files) {
       if (!f.type.startsWith('image/')) continue;
       try {
         const blob = await compressImage(f);
-        formImages.push({
-          filename: null,
-          blob,
-          tempUrl: URL.createObjectURL(blob)
-        });
+        formImages.push({ filename: null, blob, tempUrl: URL.createObjectURL(blob) });
+        if (!firstNewBlob) firstNewBlob = blob;
       } catch (e) {
         console.warn('compress failed', e);
       }
     }
     setStatus('準備完了');
     renderFormImageStrip();
+    if (type === 'exercise' && firstNewBlob) {
+      const nameInput = form.querySelector('[data-f="name"]');
+      if (nameInput && !nameInput.value.trim()) {
+        runOcrIntoField(firstNewBlob, nameInput);
+      }
+    }
   };
   renderFormImageStrip();
+}
+
+let tesseractPromise = null;
+function loadTesseract() {
+  if (tesseractPromise) return tesseractPromise;
+  tesseractPromise = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+    s.onload = () => window.Tesseract ? resolve(window.Tesseract) : reject(new Error('Tesseract not on window'));
+    s.onerror = () => reject(new Error('Tesseract.jsの読み込みに失敗しました'));
+    document.head.appendChild(s);
+  });
+  return tesseractPromise;
+}
+
+async function runOcrIntoField(blob, targetInput) {
+  setStatus('画像から文字起こし中…');
+  try {
+    const T = await loadTesseract();
+    const r = await T.recognize(blob, 'jpn');
+    const text = (r?.data?.text || '')
+      .replace(/[​-‍﻿]/g, '')
+      .split(/\r?\n/).map(s => s.trim()).filter(Boolean)
+      .slice(0, 4).join(' ')
+      .slice(0, 100);
+    if (text && !targetInput.value.trim()) {
+      targetInput.value = text;
+      targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+      setStatus('文字起こし ✓');
+    } else {
+      setStatus('文字起こし完了（既に入力あり）');
+    }
+  } catch (e) {
+    console.warn('OCR failed', e);
+    setStatus('文字起こし失敗');
+  }
 }
 
 //===================== Kcal lookup (free, CORS-friendly sources) =====================
