@@ -72,7 +72,7 @@ Favorites for `meal` and `exercise` live in `settings.favorites[type]`. Tapping 
 
 ## Things that bite
 
-- **Bump `CACHE` in `sw.js`** on every user-facing change, otherwise the old cached `index.html` keeps serving. Currently `health-tracker-v17`.
+- **Bump `CACHE` in `sw.js`** on every user-facing change, otherwise the old cached `index.html` keeps serving. Currently `health-tracker-v18`.
 - **OPFS is per-origin and per-browser**: data does not sync across devices. Use the export/import buttons.
 - The SW's fetch handler falls back to `./index.html` on navigation when offline — keep that intact for the PWA experience.
 - The `start_url` and `scope` in `manifest.json` are `.` so the app works at any subpath (e.g. `/health-tracker/` on Pages).
