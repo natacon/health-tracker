@@ -537,6 +537,18 @@
     gap: 6px;
     align-items: center;
   }
+  .batch-row.meal-row {
+    grid-template-columns: 1fr 78px auto;
+  }
+  .batch-row input[type="number"] {
+    padding: 6px 8px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    font: inherit;
+    font-size: 13px;
+    background: #fff;
+    min-width: 0;
+  }
   .batch-row input[type="text"] {
     padding: 6px 8px;
     border: 1px solid var(--line);
@@ -1540,18 +1552,40 @@ function buildAddForm(type, prefill = null) {
     const defaultLabel = prefill?.label ?? mealLabelForTime(time);
     const favs = (settings.favorites?.meal || []);
     const favTexts = [...new Set(favs.map(f => (f.text || '').trim()).filter(Boolean))];
-    inner = `
-      <div class="field"><label>内容</label><input type="text" data-f="text" list="mealTextList" placeholder="オートミール" value="${escapeHtml(prefill?.text ?? '')}"></div>
-      <datalist id="mealTextList">${favTexts.map(t => `<option value="${escapeHtml(t)}"></option>`).join('')}</datalist>
-      <div class="field"><label>時刻</label><input type="time" data-f="time" value="${time}"></div>
-      <div class="field"><label>区分</label>
-        <div class="seg" data-seg="label">
-          ${MEAL_LABELS.map(l => `<button type="button" class="${defaultLabel === l ? 'on' : ''}" data-val="${l}">${l}</button>`).join('')}
+    const datalist = `<datalist id="mealTextList">${favTexts.map(t => `<option value="${escapeHtml(t)}"></option>`).join('')}</datalist>`;
+    if (editingId) {
+      inner = `
+        <div class="field"><label>内容</label><input type="text" data-f="text" list="mealTextList" placeholder="オートミール" value="${escapeHtml(prefill?.text ?? '')}"></div>
+        ${datalist}
+        <div class="field"><label>時刻</label><input type="time" data-f="time" value="${time}"></div>
+        <div class="field"><label>区分</label>
+          <div class="seg" data-seg="label">
+            ${MEAL_LABELS.map(l => `<button type="button" class="${defaultLabel === l ? 'on' : ''}" data-val="${l}">${l}</button>`).join('')}
+          </div>
         </div>
-      </div>
-      <div class="field"><label>kcal</label><input type="number" data-f="kcal" placeholder="180" value="${prefill?.kcal ?? ''}"><span class="unit">kcal</span><button type="button" class="ghost" data-act="estimate-kcal" title="自動取得（Open Food Facts / Wikipedia / 運動はMET推定）">🔍 推定</button></div>
-      ${imagePickerHtml()}
-    `;
+        <div class="field"><label>kcal</label><input type="number" data-f="kcal" placeholder="180" value="${prefill?.kcal ?? ''}"><span class="unit">kcal</span><button type="button" class="ghost" data-act="estimate-kcal" title="自動取得（Open Food Facts / Wikipedia）">🔍 推定</button></div>
+        ${imagePickerHtml()}
+      `;
+    } else {
+      inner = `
+        ${datalist}
+        <div class="field"><label>時刻</label><input type="time" data-f="time" value="${time}"></div>
+        <div class="field"><label>区分</label>
+          <div class="seg" data-seg="label">
+            ${MEAL_LABELS.map(l => `<button type="button" class="${defaultLabel === l ? 'on' : ''}" data-val="${l}">${l}</button>`).join('')}
+          </div>
+        </div>
+        <div class="batch-panel" data-meal-rows>
+          <div class="batch-head"><b>食事内容</b><span style="color:var(--ink-soft);font-size:11px">複数行いっぺんに登録できます</span></div>
+          <div class="batch-rows" data-meal-rows-list></div>
+          <div class="batch-actions">
+            <button type="button" class="ghost" data-mr-add>+ 行を追加</button>
+            <button type="button" class="ghost" data-mr-estimate>🔍 全て推定</button>
+          </div>
+        </div>
+        ${imagePickerHtml()}
+      `;
+    }
   } else if (type === 'exercise') {
     inner = `
       ${imagePickerHtml()}
@@ -1674,8 +1708,12 @@ function buildFavoritesRow(type) {
 function openAddForm(type, prefill = null) {
   activeAddType = type;
   resetFormImages();
+  formMealRows = null;
   if ((type === 'meal' || type === 'exercise') && Array.isArray(prefill?.images)) {
     formImages = prefill.images.map(filename => ({ filename, blob: null, tempUrl: null }));
+  }
+  if (type === 'meal' && !editingId) {
+    formMealRows = [{ text: '', kcal: '' }];
   }
   const form = document.getElementById('addForm');
   form.classList.remove('hide');
@@ -1729,26 +1767,39 @@ function openAddForm(type, prefill = null) {
         });
       });
     }
-    // 内容（datalist）が ★いつもの と一致したら kcal/区分 を自動補完
-    const textInput = form.querySelector('[data-f="text"]');
-    if (textInput) {
-      const applyFavMatch = () => {
-        const v = textInput.value.trim();
-        if (!v) return;
-        const fav = (settings.favorites?.meal || []).find(f => (f.text || '').trim() === v);
-        if (!fav) return;
-        const kcalInput = form.querySelector('[data-f="kcal"]');
-        if (kcalInput && !kcalInput.value && Number.isFinite(parseFloat(fav.kcal))) {
-          kcalInput.value = fav.kcal;
-        }
-        if (labelSeg && fav.label) {
-          labelSeg.querySelectorAll('button').forEach(b => {
-            b.classList.toggle('on', b.dataset.val === fav.label);
-          });
-        }
+    // 編集モード時のみ: 内容（datalist）が ★いつもの と一致したら kcal/区分 を自動補完
+    if (editingId) {
+      const textInput = form.querySelector('[data-f="text"]');
+      if (textInput) {
+        const applyFavMatch = () => {
+          const v = textInput.value.trim();
+          if (!v) return;
+          const fav = (settings.favorites?.meal || []).find(f => (f.text || '').trim() === v);
+          if (!fav) return;
+          const kcalInput = form.querySelector('[data-f="kcal"]');
+          if (kcalInput && !kcalInput.value && Number.isFinite(parseFloat(fav.kcal))) {
+            kcalInput.value = fav.kcal;
+          }
+          if (labelSeg && fav.label) {
+            labelSeg.querySelectorAll('button').forEach(b => {
+              b.classList.toggle('on', b.dataset.val === fav.label);
+            });
+          }
+        };
+        textInput.addEventListener('change', applyFavMatch);
+        textInput.addEventListener('input', applyFavMatch);
+      }
+    }
+    // 新規追加モード: 複数行リストを描画
+    if (Array.isArray(formMealRows)) {
+      renderMealRows(form);
+      const addBtn = form.querySelector('[data-mr-add]');
+      if (addBtn) addBtn.onclick = () => {
+        formMealRows.push({ text: '', kcal: '' });
+        renderMealRows(form);
       };
-      textInput.addEventListener('change', applyFavMatch);
-      textInput.addEventListener('input', applyFavMatch);
+      const estBtn = form.querySelector('[data-mr-estimate]');
+      if (estBtn) estBtn.onclick = () => estimateAllMealRows(estBtn);
     }
   }
 
@@ -1865,6 +1916,64 @@ async function runExerciseOcr(form, blob) {
   } catch (e) {
     console.warn('OCR failed', e);
     setStatus('文字起こし失敗');
+  }
+}
+
+// Meal multi-row state (always batch when adding new; single-row when editing)
+let formMealRows = null;
+
+function renderMealRows(form) {
+  const list = form.querySelector('[data-meal-rows-list]');
+  if (!list || !Array.isArray(formMealRows)) return;
+  list.innerHTML = formMealRows.map((r, i) => `
+    <div class="batch-row meal-row" data-row="${i}">
+      <input type="text" data-mr="text" list="mealTextList" placeholder="オートミール" value="${escapeHtml(r.text || '')}">
+      <input type="number" data-mr="kcal" placeholder="kcal" value="${r.kcal ?? ''}">
+      <button type="button" class="batch-del" data-mr="del" title="削除">×</button>
+    </div>
+  `).join('');
+  list.querySelectorAll('.batch-row').forEach(row => {
+    const i = parseInt(row.dataset.row, 10);
+    const textInput = row.querySelector('[data-mr="text"]');
+    const kcalInput = row.querySelector('[data-mr="kcal"]');
+    textInput.oninput = () => {
+      formMealRows[i].text = textInput.value;
+      const v = textInput.value.trim();
+      const fav = v ? (settings.favorites?.meal || []).find(f => (f.text || '').trim() === v) : null;
+      if (fav && !kcalInput.value && Number.isFinite(parseFloat(fav.kcal))) {
+        kcalInput.value = fav.kcal;
+        formMealRows[i].kcal = parseFloat(fav.kcal);
+      }
+    };
+    kcalInput.oninput = () => { formMealRows[i].kcal = kcalInput.value; };
+    row.querySelector('[data-mr="del"]').onclick = () => {
+      formMealRows.splice(i, 1);
+      if (formMealRows.length === 0) formMealRows.push({ text: '', kcal: '' });
+      renderMealRows(form);
+    };
+  });
+}
+
+async function estimateAllMealRows(btn) {
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '推定中…';
+  try {
+    for (let i = 0; i < formMealRows.length; i++) {
+      const r = formMealRows[i];
+      const text = (r.text || '').trim();
+      if (!text || (r.kcal !== '' && r.kcal != null)) continue;
+      try {
+        const k = await lookupMealKcal(text);
+        if (Number.isFinite(k)) r.kcal = k;
+      } catch {}
+    }
+    const form = document.getElementById('addForm');
+    renderMealRows(form);
+    setStatus('推定 ✓');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = original;
   }
 }
 
@@ -2260,6 +2369,7 @@ function cancelAddForm() {
   activeAddType = null;
   editingId = null;
   formBatchEntries = null;
+  formMealRows = null;
   resetFormImages();
   const form = document.getElementById('addForm');
   form.classList.add('hide');
@@ -2305,6 +2415,35 @@ async function saveAddForm() {
   };
 
   const time = get('time') || nowTimeForDate(currentDate);
+
+  // Meal batch mode (new entries only): register N meal events sharing time/label/images
+  if (activeAddType === 'meal' && !editingId && Array.isArray(formMealRows)) {
+    const label = getSeg('label');
+    if (!label) { alert('区分を選んでください'); return; }
+    const rows = formMealRows
+      .map(r => ({ text: (r.text || '').trim(), kcal: r.kcal }))
+      .filter(r => r.text || (r.kcal !== '' && r.kcal != null));
+    if (rows.length === 0 && formImages.length === 0) {
+      alert('内容かkcal、または写真を入力してください');
+      return;
+    }
+    const filenames = await commitFormImages(null);
+    const sharedImages = filenames.length ? filenames : null;
+    if (rows.length === 0 && sharedImages) {
+      entry.events.push({ id: uid(), time, type: 'meal', label, text: '', kcal: '', images: sharedImages.slice() });
+    } else {
+      for (const r of rows) {
+        const ev = { id: uid(), time, type: 'meal', label, text: r.text, kcal: r.kcal === '' || r.kcal == null ? '' : parseFloat(r.kcal) };
+        if (sharedImages) ev.images = sharedImages.slice();
+        entry.events.push(ev);
+      }
+    }
+    cancelAddForm();
+    renderTimeline();
+    scheduleSave();
+    setStatus(`${Math.max(rows.length, 1)}件追加 ✓`);
+    return;
+  }
 
   // Exercise batch mode: register multiple events from one screenshot
   if (activeAddType === 'exercise' && Array.isArray(formBatchEntries) && formBatchEntries.length > 0) {
