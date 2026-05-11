@@ -67,11 +67,12 @@ Favorites for `meal` and `exercise` live in `settings.favorites[type]`. Tapping 
   - Exercise: hardcoded MET dictionary keyed on workout name + `<n>分` duration in the value field, multiplied by latest known body weight (default 50kg).
   - On miss/error, prompts the user and opens Google search in a new tab as fallback. Direct Google scraping isn't possible from JS (CORS).
 - **Meal text autocomplete**: 内容 field is a `<datalist>`-backed combobox showing every `★いつもの` meal text. Picking a known entry also auto-fills 区分 + kcal.
-- **Exercise OCR**: Tesseract.js (v5, lazy-loaded from jsDelivr) runs Japanese OCR on the first picked image and writes the result into the 種目 field if it's empty. Useful for YouTube watch-history screenshots.
+- **Exercise OCR**: Tesseract.js (v5, lazy-loaded from jsDelivr) runs Japanese OCR on the first picked image. `parseYouTubeOcr` splits the text by `MM:SS` / `H:MM:SS` duration markers; when 2+ entries are detected the form swaps into a batch panel — each detected workout is an editable row, and 「追加」 registers them all at once as exercise events sharing the source image. Single-entry results fall through to filling the existing 種目/内容 fields.
+- **Shared image refcount**: Because batch registration attaches one image to multiple events, `imageReferenceCount` scans `entry.events` + `cache` before `deleteEvent` / `clearDayBtn` purge files from OPFS — only truly orphaned files get removed.
 
 ## Things that bite
 
-- **Bump `CACHE` in `sw.js`** on every user-facing change, otherwise the old cached `index.html` keeps serving. Currently `health-tracker-v16`.
+- **Bump `CACHE` in `sw.js`** on every user-facing change, otherwise the old cached `index.html` keeps serving. Currently `health-tracker-v17`.
 - **OPFS is per-origin and per-browser**: data does not sync across devices. Use the export/import buttons.
 - The SW's fetch handler falls back to `./index.html` on navigation when offline — keep that intact for the PWA experience.
 - The `start_url` and `scope` in `manifest.json` are `.` so the app works at any subpath (e.g. `/health-tracker/` on Pages).
