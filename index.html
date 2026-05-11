@@ -513,6 +513,52 @@
     border-radius: 6px;
   }
 
+  /* ---------- Batch (multi-entry) exercise panel ---------- */
+  .batch-panel {
+    margin: 10px 0;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.5);
+  }
+  .batch-panel .batch-head {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+  .batch-panel .batch-head b { color: var(--accent); }
+  .batch-panel .batch-rows {
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .batch-row {
+    display: grid;
+    grid-template-columns: auto 1fr 84px auto;
+    gap: 6px;
+    align-items: center;
+  }
+  .batch-row input[type="text"] {
+    padding: 6px 8px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    font: inherit;
+    font-size: 13px;
+    background: #fff;
+    min-width: 0;
+  }
+  .batch-row .batch-del {
+    background: transparent; border: none;
+    padding: 4px 6px;
+    color: var(--ink-faint);
+    font-size: 16px;
+  }
+  .batch-row .batch-del:hover { color: var(--bad); background: rgba(0,0,0,0.04); box-shadow: none; transform: none; }
+  .batch-panel .batch-actions {
+    display: flex; gap: 6px; margin-top: 10px;
+    flex-wrap: wrap;
+  }
+  .batch-panel .batch-actions button { font-size: 12px; padding: 6px 10px; }
+
   /* ---------- Settings: fav list ---------- */
   .fav-list-group { font-size: 12px; color: var(--ink-soft); margin: 12px 0 6px; letter-spacing: 0.05em; }
   .fav-list-item {
@@ -1509,12 +1555,14 @@ function buildAddForm(type, prefill = null) {
   } else if (type === 'exercise') {
     inner = `
       ${imagePickerHtml()}
-      <div class="field"><label>種目</label><input type="text" data-f="name" placeholder="歩数 / YouTube など" value="${escapeHtml(prefill?.name ?? '')}"></div>
-      <div class="field"><label>内容</label><input type="text" data-f="value" placeholder="8,420歩 / 20分" value="${escapeHtml(prefill?.value ?? '')}"></div>
       <div class="field"><label>時刻</label><input type="time" data-f="time" value="${time}"></div>
-      <div class="field"><label>消費kcal</label><input type="number" data-f="kcal" placeholder="200" value="${prefill?.kcal ?? ''}"><span class="unit">kcal</span><button type="button" class="ghost" data-act="estimate-kcal" title="自動取得（Open Food Facts / Wikipedia / 運動はMET推定）">🔍 推定</button></div>
-      <div class="field"><label>URL</label><input type="url" data-f="url" placeholder="YouTubeリンクなど" value="${escapeHtml(prefill?.url ?? '')}"></div>
-      <div class="thumb-preview" data-thumb-preview></div>
+      <div data-single-only>
+        <div class="field"><label>種目</label><input type="text" data-f="name" placeholder="歩数 / YouTube など" value="${escapeHtml(prefill?.name ?? '')}"></div>
+        <div class="field"><label>内容</label><input type="text" data-f="value" placeholder="8,420歩 / 20分" value="${escapeHtml(prefill?.value ?? '')}"></div>
+        <div class="field"><label>消費kcal</label><input type="number" data-f="kcal" placeholder="200" value="${prefill?.kcal ?? ''}"><span class="unit">kcal</span><button type="button" class="ghost" data-act="estimate-kcal" title="自動取得（Open Food Facts / Wikipedia / 運動はMET推定）">🔍 推定</button></div>
+        <div class="field"><label>URL</label><input type="url" data-f="url" placeholder="YouTubeリンクなど" value="${escapeHtml(prefill?.url ?? '')}"></div>
+        <div class="thumb-preview" data-thumb-preview></div>
+      </div>
     `;
   } else if (type === 'mood') {
     inner = `
@@ -1783,13 +1831,150 @@ function bindImagePicker(form, type) {
     setStatus('準備完了');
     renderFormImageStrip();
     if (type === 'exercise' && firstNewBlob) {
-      const nameInput = form.querySelector('[data-f="name"]');
-      if (nameInput && !nameInput.value.trim()) {
-        runOcrIntoField(firstNewBlob, nameInput);
-      }
+      runExerciseOcr(form, firstNewBlob);
     }
   };
   renderFormImageStrip();
+}
+
+async function runExerciseOcr(form, blob) {
+  setStatus('画像から文字起こし中…');
+  try {
+    const T = await loadTesseract();
+    const r = await T.recognize(blob, 'jpn');
+    const text = (r?.data?.text || '').trim();
+    const entries = parseYouTubeOcr(text);
+    if (entries.length >= 2) {
+      renderBatchPanel(form, entries);
+      setStatus(`${entries.length}件の運動を検出 ✓`);
+      return;
+    }
+    const nameInput = form.querySelector('[data-f="name"]');
+    if (nameInput && !nameInput.value.trim()) {
+      const single = entries[0]?.title || text.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').slice(0, 100);
+      if (single) {
+        nameInput.value = single;
+        nameInput.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      const valueInput = form.querySelector('[data-f="value"]');
+      if (valueInput && entries[0]?.duration && !valueInput.value.trim()) {
+        valueInput.value = entries[0].duration;
+      }
+    }
+    setStatus('文字起こし ✓');
+  } catch (e) {
+    console.warn('OCR failed', e);
+    setStatus('文字起こし失敗');
+  }
+}
+
+// Exercise batch mode (multiple workouts extracted from one screenshot)
+let formBatchEntries = null;
+const TIME_LINE_RE = /^(?:配信中\s*)?(\d{1,2}):(\d{2})(?::(\d{2}))?$/;
+
+function parseYouTubeOcr(text) {
+  if (!text) return [];
+  const lines = text.split(/\r?\n/)
+    .map(s => s.replace(/[​-‏‪-‮﻿]/g, '').trim())
+    .filter(Boolean)
+    .filter(l => !/^(配信中|ライブ|live|broadcast)$/i.test(l));
+  if (lines.length === 0) return [];
+  const entries = [];
+  let buf = [];
+  for (const line of lines) {
+    const dm = line.match(TIME_LINE_RE);
+    if (dm && buf.length) {
+      const title = buf.join(' ').replace(/\s+/g, ' ').trim().slice(0, 100);
+      entries.push({ title, duration: dm[3] ? `${dm[1]}:${dm[2]}:${dm[3]}` : `${dm[1]}:${dm[2]}` });
+      buf = [];
+    } else if (!dm) {
+      buf.push(line);
+    }
+  }
+  if (buf.length) {
+    const title = buf.join(' ').replace(/\s+/g, ' ').trim().slice(0, 100);
+    if (title) entries.push({ title, duration: '' });
+  }
+  // Filter out obvious channel-name-only entries (very short with no duration in batch mode)
+  return entries.filter(e => e.title && e.title.length >= 2);
+}
+
+function renderBatchPanel(form, entries) {
+  formBatchEntries = entries.map(e => ({ ...e, checked: true }));
+  form.querySelectorAll('[data-single-only]').forEach(el => el.classList.add('hide'));
+  let panel = form.querySelector('[data-batch-panel]');
+  if (!panel) {
+    panel = document.createElement('div');
+    panel.className = 'batch-panel';
+    panel.dataset.batchPanel = '1';
+    const anchor = form.querySelector('[data-img-input]')?.closest('.field') || form.firstElementChild;
+    anchor.insertAdjacentElement('afterend', panel);
+  }
+  refreshBatchPanel(form);
+}
+
+function refreshBatchPanel(form) {
+  const panel = form.querySelector('[data-batch-panel]');
+  if (!panel || !formBatchEntries) return;
+  panel.innerHTML = `
+    <div class="batch-head">
+      <b>${formBatchEntries.length}件</b>の運動候補が見つかりました
+      <span style="color:var(--ink-soft);font-size:11px">タップで編集 / × で除外</span>
+    </div>
+    <div class="batch-rows">
+      ${formBatchEntries.map((e, i) => `
+        <div class="batch-row" data-row="${i}">
+          <input type="checkbox" data-bf="check" ${e.checked ? 'checked' : ''}>
+          <input type="text" data-bf="title" value="${escapeHtml(e.title || '')}" placeholder="種目">
+          <input type="text" data-bf="duration" value="${escapeHtml(e.duration || '')}" placeholder="20分">
+          <button type="button" class="batch-del" data-bf="del" title="削除">×</button>
+        </div>
+      `).join('')}
+    </div>
+    <div class="batch-actions">
+      <button type="button" class="ghost" data-bf="add">+ 行を追加</button>
+      <button type="button" class="ghost" data-bf="exit">単体入力に切替</button>
+    </div>
+  `;
+  panel.querySelectorAll('.batch-row').forEach(row => {
+    const i = parseInt(row.dataset.row, 10);
+    row.querySelector('[data-bf="check"]').onchange = e => { formBatchEntries[i].checked = e.target.checked; };
+    row.querySelector('[data-bf="title"]').oninput = e => { formBatchEntries[i].title = e.target.value; };
+    row.querySelector('[data-bf="duration"]').oninput = e => { formBatchEntries[i].duration = e.target.value; };
+    row.querySelector('[data-bf="del"]').onclick = () => {
+      formBatchEntries.splice(i, 1);
+      if (formBatchEntries.length === 0) exitBatchMode(form);
+      else refreshBatchPanel(form);
+    };
+  });
+  panel.querySelector('[data-bf="add"]').onclick = () => {
+    formBatchEntries.push({ title: '', duration: '', checked: true });
+    refreshBatchPanel(form);
+  };
+  panel.querySelector('[data-bf="exit"]').onclick = () => exitBatchMode(form);
+}
+
+function exitBatchMode(form) {
+  formBatchEntries = null;
+  const panel = form.querySelector('[data-batch-panel]');
+  if (panel) panel.remove();
+  form.querySelectorAll('[data-single-only]').forEach(el => el.classList.remove('hide'));
+}
+
+function imageReferenceCount(filename) {
+  let count = 0;
+  for (const e of entry.events) {
+    if (Array.isArray(e.images) && e.images.includes(filename)) count++;
+  }
+  for (const [date, day] of Object.entries(cache)) {
+    if (date === currentDate) continue;
+    const evs = day?.events;
+    if (!Array.isArray(evs)) continue;
+    for (const e of evs) {
+      if (Array.isArray(e.images) && e.images.includes(filename)) count++;
+    }
+  }
+  return count;
 }
 
 let tesseractPromise = null;
@@ -1803,29 +1988,6 @@ function loadTesseract() {
     document.head.appendChild(s);
   });
   return tesseractPromise;
-}
-
-async function runOcrIntoField(blob, targetInput) {
-  setStatus('画像から文字起こし中…');
-  try {
-    const T = await loadTesseract();
-    const r = await T.recognize(blob, 'jpn');
-    const text = (r?.data?.text || '')
-      .replace(/[​-‍﻿]/g, '')
-      .split(/\r?\n/).map(s => s.trim()).filter(Boolean)
-      .slice(0, 4).join(' ')
-      .slice(0, 100);
-    if (text && !targetInput.value.trim()) {
-      targetInput.value = text;
-      targetInput.dispatchEvent(new Event('input', { bubbles: true }));
-      setStatus('文字起こし ✓');
-    } else {
-      setStatus('文字起こし完了（既に入力あり）');
-    }
-  } catch (e) {
-    console.warn('OCR failed', e);
-    setStatus('文字起こし失敗');
-  }
 }
 
 //===================== Kcal lookup (free, CORS-friendly sources) =====================
@@ -1927,12 +2089,20 @@ function detectMET(name, value) {
 
 function detectMinutes(value) {
   if (!value) return null;
-  const m1 = String(value).match(/(\d+(?:\.\d+)?)\s*時間/);
-  const m2 = String(value).match(/(\d+(?:\.\d+)?)\s*(?:分|min)/i);
+  const s = String(value);
+  const m1 = s.match(/(\d+(?:\.\d+)?)\s*時間/);
+  const m2 = s.match(/(\d+(?:\.\d+)?)\s*(?:分|min)/i);
   let mins = 0;
   if (m1) mins += parseFloat(m1[1]) * 60;
   if (m2) mins += parseFloat(m2[1]);
-  return mins > 0 ? mins : null;
+  if (mins > 0) return mins;
+  const m3 = s.match(/(?:^|\s)(\d{1,2}):(\d{2})(?::(\d{2}))?(?:\s|$)/);
+  if (m3) {
+    const a = parseInt(m3[1], 10), b = parseInt(m3[2], 10);
+    const c = m3[3] !== undefined ? parseInt(m3[3], 10) : null;
+    return c === null ? a + b / 60 : a * 60 + b + c / 60;
+  }
+  return null;
 }
 
 async function lookupExerciseKcal(name, value) {
@@ -2089,6 +2259,7 @@ function saveFavoriteFromForm() {
 function cancelAddForm() {
   activeAddType = null;
   editingId = null;
+  formBatchEntries = null;
   resetFormImages();
   const form = document.getElementById('addForm');
   form.classList.add('hide');
@@ -2134,6 +2305,34 @@ async function saveAddForm() {
   };
 
   const time = get('time') || nowTimeForDate(currentDate);
+
+  // Exercise batch mode: register multiple events from one screenshot
+  if (activeAddType === 'exercise' && Array.isArray(formBatchEntries) && formBatchEntries.length > 0) {
+    const rows = formBatchEntries
+      .filter(r => r.checked !== false && (r.title || '').trim());
+    if (rows.length === 0) { alert('登録する運動を1件以上選んでください'); return; }
+    const filenames = await commitFormImages(null);
+    const sharedImages = filenames.length ? filenames : null;
+    for (const r of rows) {
+      const ev = { id: uid(), time, type: 'exercise', name: r.title.trim() };
+      const duration = (r.duration || '').trim();
+      if (duration) ev.value = duration;
+      if (sharedImages) ev.images = sharedImages.slice();
+      const mins = duration ? detectMinutes(duration) : null;
+      if (mins) {
+        const weight = latestKnownWeight() || 50;
+        const met = detectMET(ev.name, duration);
+        ev.kcal = Math.round(met * weight * (mins / 60));
+      }
+      entry.events.push(ev);
+    }
+    cancelAddForm();
+    renderTimeline();
+    scheduleSave();
+    setStatus(`${rows.length}件追加 ✓`);
+    return;
+  }
+
   let payload = { time, type: activeAddType };
 
   if (activeAddType === 'weight') {
@@ -2294,7 +2493,8 @@ async function deleteEvent(id) {
   renderTimeline();
   scheduleSave();
   if (target && Array.isArray(target.images) && target.images.length) {
-    await imageStore.deleteMany(target.images);
+    const orphans = target.images.filter(f => imageReferenceCount(f) === 0);
+    if (orphans.length) await imageStore.deleteMany(orphans);
   }
 }
 
@@ -2811,8 +3011,10 @@ function bindInputs() {
       ? day.events.flatMap(e => Array.isArray(e.images) ? e.images : [])
       : [];
     await storage.delete(currentDate);
-    if (filenames.length) await imageStore.deleteMany(filenames);
     loadEntry(currentDate);
+    // After clearing, references in cache no longer include this day — refcount works
+    const orphans = [...new Set(filenames)].filter(f => imageReferenceCount(f) === 0);
+    if (orphans.length) await imageStore.deleteMany(orphans);
     renderHistory();
     setStatus('消去しました');
   };
