@@ -67,13 +67,14 @@ Favorites for `meal` and `exercise` live in `settings.favorites[type]`. Tapping 
   - Meal: Open Food Facts search → ja.wikipedia search/extract — first plausible `<n>kcal` wins.
   - Exercise: hardcoded MET dictionary keyed on workout name + `<n>分` duration in the value field, multiplied by latest known body weight (default 50kg).
   - On miss/error, prompts the user and opens Google search in a new tab as fallback. Direct Google scraping isn't possible from JS (CORS).
+- **Post-save autofill**: After a meal/exercise record is saved, `autofillKcalAsync(eventId)` fires in the background. It runs the same kcal lookup in parallel across every item whose kcal is still empty, then patches the in-place items, re-renders the timeline, and persists. Items the user already typed kcal for are left alone. The autofill is fire-and-forget — the form closes immediately, kcal numbers populate seconds later as fetches return.
 - **Meal text autocomplete**: 内容 field is a `<datalist>`-backed combobox showing every `★いつもの` meal text. Picking a known entry also auto-fills 区分 + kcal.
 - **Exercise OCR**: Tesseract.js (v5, lazy-loaded from jsDelivr) runs Japanese OCR on the first picked image. `parseYouTubeOcr` splits the text by `XX万回視聴` view-count lines (every YouTube history cell ends with one) and treats standalone `MM:SS` / `H:MM:SS` lines as durations attached to the next or just-flushed entry. Date headers like `2025/02/01` and UI noise like `今日`/`ホーム`/`急上昇` are skipped. The detected entries land in `formExerciseRows`, replacing empty rows or appending to filled ones.
 - **Shared image refcount**: Because batch registration attaches one image to multiple events, `imageReferenceCount` scans `entry.events` + `cache` before `deleteEvent` / `clearDayBtn` purge files from OPFS — only truly orphaned files get removed.
 
 ## Things that bite
 
-- **Bump `CACHE` in `sw.js`** on every user-facing change, otherwise the old cached `index.html` keeps serving. Currently `health-tracker-v22`.
+- **Bump `CACHE` in `sw.js`** on every user-facing change, otherwise the old cached `index.html` keeps serving. Currently `health-tracker-v23`.
 - **OPFS is per-origin and per-browser**: data does not sync across devices. Use the export/import buttons.
 - The SW's fetch handler falls back to `./index.html` on navigation when offline — keep that intact for the PWA experience.
 - The `start_url` and `scope` in `manifest.json` are `.` so the app works at any subpath (e.g. `/health-tracker/` on Pages).
