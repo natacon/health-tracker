@@ -1961,31 +1961,60 @@ async function estimateAllMealRows(btn) {
 
 // Exercise multi-row state (default for new entries, OCR populates these rows)
 let formExerciseRows = null;
-const TIME_LINE_RE = /^(?:配信中\s*)?(\d{1,2}):(\d{2})(?::(\d{2}))?$/;
+const TIME_LINE_RE = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/;
+const VIEW_LINE_RE = /[\d,]+\s*[万千]?\s*回\s*(?:視聴|視聽)/;
+const DATE_LINE_RE = /^\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2}$/;
+const NOISE_LINE_RE = /^(?:配信中|ライブ|live|broadcast|今日|昨日|今週|先週|今月|先月|履歴|視聴履歴|ホーム|急上昇|登録チャンネル|ライブラリ|もっと見る)$/i;
 
 function parseYouTubeOcr(text) {
   if (!text) return [];
   const lines = text.split(/\r?\n/)
     .map(s => s.replace(/[​-‏‪-‮﻿]/g, '').trim())
     .filter(Boolean)
-    .filter(l => !/^(配信中|ライブ|live|broadcast)$/i.test(l));
+    .filter(l => !NOISE_LINE_RE.test(l) && !DATE_LINE_RE.test(l));
   if (lines.length === 0) return [];
+
   const entries = [];
-  let buf = [];
-  for (const line of lines) {
-    const dm = line.match(TIME_LINE_RE);
-    if (dm && buf.length) {
-      const name = buf.join(' ').replace(/\s+/g, ' ').trim().slice(0, 100);
-      entries.push({ name, value: dm[3] ? `${dm[1]}:${dm[2]}:${dm[3]}` : `${dm[1]}:${dm[2]}` });
-      buf = [];
-    } else if (!dm) {
-      buf.push(line);
+  let titleBuf = [];
+  let pendingDuration = '';
+
+  const fmtDur = m => m[3] ? `${m[1]}:${m[2]}:${m[3]}` : `${m[1]}:${m[2]}`;
+  const flush = (durFromLine = '') => {
+    if (!titleBuf.length) return;
+    const name = titleBuf.join(' ').replace(/\s+/g, ' ').trim().slice(0, 120);
+    if (name.length >= 2) {
+      entries.push({ name, value: pendingDuration || durFromLine });
     }
+    titleBuf = [];
+    pendingDuration = '';
+  };
+
+  for (const line of lines) {
+    // Standalone duration line: belongs to next entry (or just-flushed entry if no titleBuf yet)
+    const tmStandalone = line.match(TIME_LINE_RE);
+    if (tmStandalone) {
+      const dur = fmtDur(tmStandalone);
+      if (!pendingDuration && titleBuf.length === 0 && entries.length && !entries[entries.length - 1].value) {
+        // OCR put this entry's duration after its view line — back-fill
+        entries[entries.length - 1].value = dur;
+      } else if (!pendingDuration) {
+        pendingDuration = dur;
+      }
+      continue;
+    }
+    // View-count line: end of current entry's text block
+    if (VIEW_LINE_RE.test(line)) {
+      // duration might be inline at the end of the same line
+      let durFromLine = '';
+      const inline = line.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+      if (inline) durFromLine = fmtDur(inline);
+      flush(durFromLine);
+      continue;
+    }
+    titleBuf.push(line);
   }
-  if (buf.length) {
-    const name = buf.join(' ').replace(/\s+/g, ' ').trim().slice(0, 100);
-    if (name) entries.push({ name, value: '' });
-  }
+  flush();
+
   return entries.filter(e => e.name && e.name.length >= 2);
 }
 
