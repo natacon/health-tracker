@@ -455,6 +455,29 @@
   .img-strip .img-item .img-remove:hover { background: var(--bad); transform: none; box-shadow: none; }
   .img-strip.readonly .img-item img { cursor: zoom-in; }
 
+  .tl-event .body .evt-items {
+    margin: 4px 0 0;
+    padding-left: 0;
+    list-style: none;
+  }
+  .tl-event .body .evt-items li {
+    font-size: 13px;
+    line-height: 1.5;
+    padding-left: 14px;
+    position: relative;
+  }
+  .tl-event .body .evt-items li::before {
+    content: "・";
+    position: absolute;
+    left: 0;
+    color: var(--ink-faint);
+  }
+  .tl-event .body .evt-items .kcal-sm {
+    color: var(--accent);
+    font-size: 11px;
+    margin-left: 6px;
+  }
+
   .tl-event .body .img-strip { margin-top: 6px; }
   .tl-event .body .img-strip .img-item { width: 60px; height: 60px; }
 
@@ -1515,62 +1538,37 @@ function buildAddForm(type, prefill = null) {
     const favs = (settings.favorites?.meal || []);
     const favTexts = [...new Set(favs.map(f => (f.text || '').trim()).filter(Boolean))];
     const datalist = `<datalist id="mealTextList">${favTexts.map(t => `<option value="${escapeHtml(t)}"></option>`).join('')}</datalist>`;
-    if (editingId) {
-      inner = `
-        <div class="field"><label>内容</label><input type="text" data-f="text" list="mealTextList" placeholder="オートミール" value="${escapeHtml(prefill?.text ?? '')}"></div>
-        ${datalist}
-        <div class="field"><label>時刻</label><input type="time" data-f="time" value="${time}"></div>
-        <div class="field"><label>区分</label>
-          <div class="seg" data-seg="label">
-            ${MEAL_LABELS.map(l => `<button type="button" class="${defaultLabel === l ? 'on' : ''}" data-val="${l}">${l}</button>`).join('')}
-          </div>
+    inner = `
+      ${datalist}
+      <div class="field"><label>時刻</label><input type="time" data-f="time" value="${time}"></div>
+      <div class="field"><label>区分</label>
+        <div class="seg" data-seg="label">
+          ${MEAL_LABELS.map(l => `<button type="button" class="${defaultLabel === l ? 'on' : ''}" data-val="${l}">${l}</button>`).join('')}
         </div>
-        <div class="field"><label>kcal</label><input type="number" data-f="kcal" placeholder="180" value="${prefill?.kcal ?? ''}"><span class="unit">kcal</span><button type="button" class="ghost" data-act="estimate-kcal" title="自動取得（Open Food Facts / Wikipedia）">🔍 推定</button></div>
-        ${imagePickerHtml()}
-      `;
-    } else {
-      inner = `
-        ${datalist}
-        <div class="field"><label>時刻</label><input type="time" data-f="time" value="${time}"></div>
-        <div class="field"><label>区分</label>
-          <div class="seg" data-seg="label">
-            ${MEAL_LABELS.map(l => `<button type="button" class="${defaultLabel === l ? 'on' : ''}" data-val="${l}">${l}</button>`).join('')}
-          </div>
+      </div>
+      <div class="batch-panel" data-meal-rows>
+        <div class="batch-head"><b>食事内容</b><span style="color:var(--ink-soft);font-size:11px">複数行いっぺんに登録できます</span></div>
+        <div class="batch-rows" data-meal-rows-list></div>
+        <div class="batch-actions">
+          <button type="button" class="ghost" data-mr-add>+ 行を追加</button>
+          <button type="button" class="ghost" data-mr-estimate>🔍 全て推定</button>
         </div>
-        <div class="batch-panel" data-meal-rows>
-          <div class="batch-head"><b>食事内容</b><span style="color:var(--ink-soft);font-size:11px">複数行いっぺんに登録できます</span></div>
-          <div class="batch-rows" data-meal-rows-list></div>
-          <div class="batch-actions">
-            <button type="button" class="ghost" data-mr-add>+ 行を追加</button>
-            <button type="button" class="ghost" data-mr-estimate>🔍 全て推定</button>
-          </div>
-        </div>
-        ${imagePickerHtml()}
-      `;
-    }
+      </div>
+      ${imagePickerHtml()}
+    `;
   } else if (type === 'exercise') {
-    if (editingId) {
-      const editName = `${prefill?.name || ''}${prefill?.value ? ' ' + prefill.value : ''}`.trim();
-      inner = `
-        ${imagePickerHtml()}
-        <div class="field"><label>時刻</label><input type="time" data-f="time" value="${time}"></div>
-        <div class="field"><label>内容</label><input type="text" data-f="name" placeholder="ヨガ 20分 など" value="${escapeHtml(editName)}"></div>
-        <div class="field"><label>消費kcal</label><input type="number" data-f="kcal" placeholder="200" value="${prefill?.kcal ?? ''}"><span class="unit">kcal</span><button type="button" class="ghost" data-act="estimate-kcal" title="MET推定">🔍 推定</button></div>
-      `;
-    } else {
-      inner = `
-        ${imagePickerHtml()}
-        <div class="field"><label>時刻</label><input type="time" data-f="time" value="${time}"></div>
-        <div class="batch-panel" data-ex-rows>
-          <div class="batch-head"><b>運動内容</b><span style="color:var(--ink-soft);font-size:11px">画像を添付するとOCRで自動入力、複数行いっぺんに登録できます</span></div>
-          <div class="batch-rows" data-ex-rows-list></div>
-          <div class="batch-actions">
-            <button type="button" class="ghost" data-er-add>+ 行を追加</button>
-            <button type="button" class="ghost" data-er-estimate>🔍 全て推定</button>
-          </div>
+    inner = `
+      ${imagePickerHtml()}
+      <div class="field"><label>時刻</label><input type="time" data-f="time" value="${time}"></div>
+      <div class="batch-panel" data-ex-rows>
+        <div class="batch-head"><b>運動内容</b><span style="color:var(--ink-soft);font-size:11px">画像を添付するとOCRで自動入力、複数行いっぺんに登録できます</span></div>
+        <div class="batch-rows" data-ex-rows-list></div>
+        <div class="batch-actions">
+          <button type="button" class="ghost" data-er-add>+ 行を追加</button>
+          <button type="button" class="ghost" data-er-estimate>🔍 全て推定</button>
         </div>
-      `;
-    }
+      </div>
+    `;
   } else if (type === 'mood') {
     inner = `
       <div class="field"><label>時刻</label><input type="time" data-f="time" value="${time}"></div>
@@ -1683,11 +1681,26 @@ function openAddForm(type, prefill = null) {
   if ((type === 'meal' || type === 'exercise') && Array.isArray(prefill?.images)) {
     formImages = prefill.images.map(filename => ({ filename, blob: null, tempUrl: null }));
   }
-  if (type === 'meal' && !editingId) {
-    formMealRows = [{ text: '', kcal: '' }];
+  if (type === 'meal') {
+    if (Array.isArray(prefill?.items) && prefill.items.length) {
+      formMealRows = prefill.items.map(it => ({ text: it.text || '', kcal: it.kcal ?? '' }));
+    } else if (prefill && (prefill.text != null || prefill.kcal != null || prefill.label)) {
+      // legacy single-text meal
+      formMealRows = [{ text: prefill.text || '', kcal: prefill.kcal ?? '' }];
+    } else {
+      formMealRows = [{ text: '', kcal: '' }];
+    }
   }
-  if (type === 'exercise' && !editingId) {
-    formExerciseRows = [{ name: '', kcal: '' }];
+  if (type === 'exercise') {
+    if (Array.isArray(prefill?.items) && prefill.items.length) {
+      formExerciseRows = prefill.items.map(it => ({ name: it.name || '', kcal: it.kcal ?? '' }));
+    } else if (prefill && (prefill.name != null || prefill.kcal != null || prefill.value)) {
+      // legacy single-text exercise (possibly with value/duration to merge)
+      const merged = `${prefill.name || ''}${prefill.value ? ' ' + prefill.value : ''}`.trim();
+      formExerciseRows = [{ name: merged, kcal: prefill.kcal ?? '' }];
+    } else {
+      formExerciseRows = [{ name: '', kcal: '' }];
+    }
   }
   const form = document.getElementById('addForm');
   form.classList.remove('hide');
@@ -2302,11 +2315,10 @@ function addEventFromFavorite(type, i) {
   const ev = { id: uid(), time, type };
   if (type === 'meal') {
     ev.label = fav.label;
-    ev.text = fav.text;
-    ev.kcal = fav.kcal;
+    ev.items = [{ text: fav.text || '', kcal: fav.kcal ?? '' }];
   } else {
-    ev.name = `${fav.name || ''}${fav.value ? ' ' + fav.value : ''}`.trim();
-    ev.kcal = fav.kcal;
+    const name = `${fav.name || ''}${fav.value ? ' ' + fav.value : ''}`.trim();
+    ev.items = [{ name, kcal: fav.kcal ?? '' }];
   }
   entry.events.push(ev);
   cancelAddForm();
@@ -2318,36 +2330,44 @@ function addEventFromFavorite(type, i) {
 function saveFavoriteFromForm() {
   if (!activeAddType) return;
   const form = document.getElementById('addForm');
-  const get = name => {
-    const el = form.querySelector(`[data-f="${name}"]`);
-    return el ? el.value : '';
-  };
   const getSeg = name => {
     const el = form.querySelector(`[data-seg="${name}"] button.on`);
     return el ? el.dataset.val : '';
   };
-  const fav = {};
-  if (activeAddType === 'meal') {
-    fav.label = getSeg('label');
-    fav.text = get('text').trim();
-    const k = get('kcal');
-    fav.kcal = k === '' ? '' : parseFloat(k);
-    if (!fav.label) { alert('区分を選んでください'); return; }
-    if (!fav.text) { alert('内容を入力してください'); return; }
-  } else if (activeAddType === 'exercise') {
-    fav.name = get('name').trim();
-    const k = get('kcal');
-    fav.kcal = k === '' ? '' : parseFloat(k);
-    if (!fav.name) { alert('内容を入力してください'); return; }
+  if (!settings.favorites) settings.favorites = { meal: [], exercise: [] };
+  let added = 0;
+  if (activeAddType === 'meal' && Array.isArray(formMealRows)) {
+    const label = getSeg('label');
+    if (!label) { alert('区分を選んでください'); return; }
+    if (!Array.isArray(settings.favorites.meal)) settings.favorites.meal = [];
+    for (const r of formMealRows) {
+      const text = (r.text || '').trim();
+      if (!text) continue;
+      const k = r.kcal === '' || r.kcal == null ? '' : parseFloat(r.kcal);
+      const dupe = settings.favorites.meal.some(f => f.label === label && (f.text || '').trim() === text);
+      if (dupe) continue;
+      settings.favorites.meal.push({ label, text, kcal: k });
+      added++;
+    }
+    if (added === 0) { alert('登録できる内容がありません（重複・空行）'); return; }
+  } else if (activeAddType === 'exercise' && Array.isArray(formExerciseRows)) {
+    if (!Array.isArray(settings.favorites.exercise)) settings.favorites.exercise = [];
+    for (const r of formExerciseRows) {
+      const name = (r.name || '').trim();
+      if (!name) continue;
+      const k = r.kcal === '' || r.kcal == null ? '' : parseFloat(r.kcal);
+      const dupe = settings.favorites.exercise.some(f => (f.name || '').trim() === name);
+      if (dupe) continue;
+      settings.favorites.exercise.push({ name, kcal: k });
+      added++;
+    }
+    if (added === 0) { alert('登録できる内容がありません（重複・空行）'); return; }
   } else {
     return;
   }
-  if (!settings.favorites) settings.favorites = { meal: [], exercise: [] };
-  if (!Array.isArray(settings.favorites[activeAddType])) settings.favorites[activeAddType] = [];
-  settings.favorites[activeAddType].push(fav);
   saveSettings();
   refreshFavRow(activeAddType);
-  setStatus('★いつもの に登録 ✓');
+  setStatus(`★いつもの に ${added} 件登録 ✓`);
 }
 
 function cancelAddForm() {
@@ -2401,69 +2421,70 @@ async function saveAddForm() {
 
   const time = get('time') || nowTimeForDate(currentDate);
 
-  // Meal batch mode (new entries only): register N meal events sharing time/label/images
-  if (activeAddType === 'meal' && !editingId && Array.isArray(formMealRows)) {
+  // Meal / Exercise: a single record holds multiple line items
+  if (activeAddType === 'meal' && Array.isArray(formMealRows)) {
     const label = getSeg('label');
     if (!label) { alert('区分を選んでください'); return; }
-    const rows = formMealRows
-      .map(r => ({ text: (r.text || '').trim(), kcal: r.kcal }))
-      .filter(r => r.text || (r.kcal !== '' && r.kcal != null));
-    if (rows.length === 0 && formImages.length === 0) {
+    const items = formMealRows
+      .map(r => ({
+        text: (r.text || '').trim(),
+        kcal: r.kcal === '' || r.kcal == null ? '' : parseFloat(r.kcal)
+      }))
+      .filter(r => r.text || (r.kcal !== '' && Number.isFinite(r.kcal)));
+    if (items.length === 0 && formImages.length === 0) {
       alert('内容かkcal、または写真を入力してください');
       return;
     }
-    const filenames = await commitFormImages(null);
-    const sharedImages = filenames.length ? filenames : null;
-    if (rows.length === 0 && sharedImages) {
-      entry.events.push({ id: uid(), time, type: 'meal', label, text: '', kcal: '', images: sharedImages.slice() });
+    const original = editingId ? entry.events.find(e => e.id === editingId) || null : null;
+    const filenames = await commitFormImages(original);
+    const ev = { id: editingId || uid(), time, type: 'meal', label, items };
+    if (filenames.length) ev.images = filenames;
+    if (editingId) {
+      const idx = entry.events.findIndex(e => e.id === editingId);
+      if (idx >= 0) entry.events[idx] = ev;
     } else {
-      for (const r of rows) {
-        const ev = { id: uid(), time, type: 'meal', label, text: r.text, kcal: r.kcal === '' || r.kcal == null ? '' : parseFloat(r.kcal) };
-        if (sharedImages) ev.images = sharedImages.slice();
-        entry.events.push(ev);
-      }
+      entry.events.push(ev);
     }
     cancelAddForm();
     renderTimeline();
     scheduleSave();
-    setStatus(`${Math.max(rows.length, 1)}件追加 ✓`);
+    setStatus(editingId ? '更新 ✓' : `${Math.max(items.length, 1)}件保存 ✓`);
     return;
   }
-
-  // Exercise batch mode (new entries): register multiple events from rows
-  if (activeAddType === 'exercise' && !editingId && Array.isArray(formExerciseRows)) {
-    const rows = formExerciseRows
-      .map(r => ({ name: (r.name || '').trim(), kcal: r.kcal }))
-      .filter(r => r.name);
-    if (rows.length === 0 && formImages.length === 0) {
-      alert('内容か写真を入力してください');
-      return;
-    }
-    const filenames = await commitFormImages(null);
-    const sharedImages = filenames.length ? filenames : null;
-    if (rows.length === 0 && sharedImages) {
-      entry.events.push({ id: uid(), time, type: 'exercise', name: '', kcal: '', images: sharedImages.slice() });
-    } else {
-      for (const r of rows) {
-        const ev = { id: uid(), time, type: 'exercise', name: r.name };
+  if (activeAddType === 'exercise' && Array.isArray(formExerciseRows)) {
+    const items = formExerciseRows
+      .map(r => {
+        const name = (r.name || '').trim();
         let kcal = r.kcal === '' || r.kcal == null ? '' : parseFloat(r.kcal);
-        if (kcal === '') {
-          const mins = detectMinutes(r.name);
+        if (kcal === '' && name) {
+          const mins = detectMinutes(name);
           if (mins) {
-            const met = detectMET(r.name);
+            const met = detectMET(name);
             const weight = latestKnownWeight() || 50;
             kcal = Math.round(met * weight * (mins / 60));
           }
         }
-        ev.kcal = kcal;
-        if (sharedImages) ev.images = sharedImages.slice();
-        entry.events.push(ev);
-      }
+        return { name, kcal };
+      })
+      .filter(r => r.name || (r.kcal !== '' && Number.isFinite(r.kcal)));
+    if (items.length === 0 && formImages.length === 0) {
+      alert('内容か写真を入力してください');
+      return;
+    }
+    const original = editingId ? entry.events.find(e => e.id === editingId) || null : null;
+    const filenames = await commitFormImages(original);
+    const ev = { id: editingId || uid(), time, type: 'exercise', items };
+    if (filenames.length) ev.images = filenames;
+    if (editingId) {
+      const idx = entry.events.findIndex(e => e.id === editingId);
+      if (idx >= 0) entry.events[idx] = ev;
+    } else {
+      entry.events.push(ev);
     }
     cancelAddForm();
     renderTimeline();
     scheduleSave();
-    setStatus(`${Math.max(rows.length, 1)}件追加 ✓`);
+    setStatus(editingId ? '更新 ✓' : `${Math.max(items.length, 1)}件保存 ✓`);
     return;
   }
 
@@ -2473,22 +2494,6 @@ async function saveAddForm() {
     const v = parseFloat(get('value'));
     if (!Number.isFinite(v)) { alert('体重を入力してください'); return; }
     payload.value = v;
-  } else if (activeAddType === 'meal') {
-    const label = getSeg('label');
-    const text = get('text').trim();
-    const kcal = get('kcal');
-    if (!label) { alert('区分を選んでください'); return; }
-    if (!text && !kcal && formImages.length === 0) { alert('内容・kcal・写真のいずれかを入力してください'); return; }
-    payload.label = label;
-    payload.text = text;
-    payload.kcal = kcal === '' ? '' : parseFloat(kcal);
-  } else if (activeAddType === 'exercise') {
-    const name = get('name').trim();
-    if (!name) { alert('内容を入力してください'); return; }
-    payload.name = name;
-    payload.value = '';
-    const kcal = get('kcal');
-    payload.kcal = kcal === '' ? '' : parseFloat(kcal);
   } else if (activeAddType === 'mood') {
     const v = getSeg('value');
     if (!v) { alert('気分を選んでください'); return; }
@@ -2522,27 +2527,13 @@ async function saveAddForm() {
     }
   }
 
-  // Persist images for meal/exercise BEFORE mutating event so we can roll back via originals
-  let original = null;
-  if (editingId) {
-    original = entry.events.find(e => e.id === editingId) || null;
-  }
-  if (activeAddType === 'meal' || activeAddType === 'exercise') {
-    const filenames = await commitFormImages(original);
-    payload.images = filenames; // always set (possibly empty) so edits drop removed images
-  }
-
   if (editingId) {
     const idx = entry.events.findIndex(e => e.id === editingId);
     if (idx >= 0) {
-      const merged = Object.assign({}, entry.events[idx], payload);
-      if (Array.isArray(merged.images) && merged.images.length === 0) delete merged.images;
-      entry.events[idx] = merged;
+      entry.events[idx] = Object.assign({}, entry.events[idx], payload);
     }
   } else {
-    const ev = Object.assign({ id: uid() }, payload);
-    if (Array.isArray(ev.images) && ev.images.length === 0) delete ev.images;
-    entry.events.push(ev);
+    entry.events.push(Object.assign({ id: uid() }, payload));
   }
   cancelAddForm();
   renderTimeline();
@@ -2550,6 +2541,21 @@ async function saveAddForm() {
 }
 
 //===================== Timeline =====================
+function mealItems(e) {
+  if (Array.isArray(e.items)) return e.items;
+  if (e.text != null || e.kcal != null) return [{ text: e.text || '', kcal: e.kcal ?? '' }];
+  return [];
+}
+
+function exerciseItems(e) {
+  if (Array.isArray(e.items)) return e.items;
+  if (e.name != null || e.value != null || e.kcal != null) {
+    const name = `${e.name || ''}${e.value ? ' ' + e.value : ''}`.trim();
+    return [{ name, kcal: e.kcal ?? '' }];
+  }
+  return [];
+}
+
 function sortedEvents() {
   return entry.events.slice().sort((a, b) => (a.time || '').localeCompare(b.time || ''));
 }
@@ -2559,15 +2565,38 @@ function eventBodyHtml(e) {
     return `<b>${Number.isFinite(e.value) ? e.value.toFixed(1) : '—'}</b> kg`;
   }
   if (e.type === 'meal') {
-    const k = parseFloat(e.kcal);
-    const main = `<b>${escapeHtml(e.label || '')}</b> ${escapeHtml(e.text || '')}${Number.isFinite(k) ? ` <span class="kcal">${k.toLocaleString()} kcal</span>` : ''}`;
-    return main + imageStripHtml(e.images);
+    const items = mealItems(e);
+    const total = items.reduce((s, it) => s + (Number.isFinite(parseFloat(it.kcal)) ? parseFloat(it.kcal) : 0), 0);
+    const totalHtml = total > 0 ? ` <span class="kcal">${total.toLocaleString()} kcal</span>` : '';
+    if (items.length <= 1) {
+      const it = items[0] || { text: '', kcal: '' };
+      const k = parseFloat(it.kcal);
+      const kcalStr = Number.isFinite(k) ? ` <span class="kcal">${k.toLocaleString()} kcal</span>` : '';
+      return `<b>${escapeHtml(e.label || '')}</b> ${escapeHtml(it.text || '')}${kcalStr}` + imageStripHtml(e.images);
+    }
+    const lis = items.map(it => {
+      const k = parseFloat(it.kcal);
+      const ks = Number.isFinite(k) ? ` <span class="kcal-sm">${k.toLocaleString()}</span>` : '';
+      return `<li>${escapeHtml(it.text || '')}${ks}</li>`;
+    }).join('');
+    return `<b>${escapeHtml(e.label || '')}</b>${totalHtml}<ul class="evt-items">${lis}</ul>` + imageStripHtml(e.images);
   }
   if (e.type === 'exercise') {
-    const k = parseFloat(e.kcal);
-    const text = `${e.name || ''}${e.value ? ' ' + e.value : ''}`.trim();
-    const main = `<b>${escapeHtml(text)}</b>${Number.isFinite(k) ? ` <span class="kcal">${k.toLocaleString()} kcal</span>` : ''}`;
-    return main + imageStripHtml(e.images);
+    const items = exerciseItems(e);
+    const total = items.reduce((s, it) => s + (Number.isFinite(parseFloat(it.kcal)) ? parseFloat(it.kcal) : 0), 0);
+    const totalHtml = total > 0 ? ` <span class="kcal">${total.toLocaleString()} kcal</span>` : '';
+    if (items.length <= 1) {
+      const it = items[0] || { name: '', kcal: '' };
+      const k = parseFloat(it.kcal);
+      const kcalStr = Number.isFinite(k) ? ` <span class="kcal">${k.toLocaleString()} kcal</span>` : '';
+      return `<b>${escapeHtml(it.name || '')}</b>${kcalStr}` + imageStripHtml(e.images);
+    }
+    const lis = items.map(it => {
+      const k = parseFloat(it.kcal);
+      const ks = Number.isFinite(k) ? ` <span class="kcal-sm">${k.toLocaleString()}</span>` : '';
+      return `<li>${escapeHtml(it.name || '')}${ks}</li>`;
+    }).join('');
+    return `${totalHtml ? '<b>運動</b>' + totalHtml : '<b>運動</b>'}<ul class="evt-items">${lis}</ul>` + imageStripHtml(e.images);
   }
   if (e.type === 'mood') return `${MOOD_LABELS[e.value] || '—'}`;
   if (e.type === 'weather') {
@@ -2644,21 +2673,27 @@ function aggregate(events) {
   // checks: presence = done
   const checksDone = {};
   byType.check.forEach(e => { checksDone[e.key] = true; });
-  // meals
-  const meals = byType.meal.map(e => ({
-    label: e.label || '',
-    text: e.text || '',
-    kcal: parseFloat(e.kcal),
-    images: Array.isArray(e.images) ? e.images : []
-  }));
+  // meals — flatten items[] so preview/share treats each line item as a row
+  const meals = byType.meal.flatMap(e => {
+    const imgs = Array.isArray(e.images) ? e.images : [];
+    return mealItems(e).map(it => ({
+      label: e.label || '',
+      text: it.text || '',
+      kcal: parseFloat(it.kcal),
+      images: imgs
+    }));
+  });
   const mealTotal = meals.reduce((s, m) => s + (Number.isFinite(m.kcal) ? m.kcal : 0), 0);
-  // exercise
-  const exercises = byType.exercise.map(e => ({
-    name: e.name || '',
-    value: e.value || '',
-    kcal: parseFloat(e.kcal),
-    images: Array.isArray(e.images) ? e.images : []
-  }));
+  // exercise — flatten items[]
+  const exercises = byType.exercise.flatMap(e => {
+    const imgs = Array.isArray(e.images) ? e.images : [];
+    return exerciseItems(e).map(it => ({
+      name: it.name || '',
+      value: '',
+      kcal: parseFloat(it.kcal),
+      images: imgs
+    }));
+  });
   const exerciseTotal = exercises.reduce((s, e) => s + (Number.isFinite(e.kcal) ? e.kcal : 0), 0);
 
   return { latestWeight, latestMood, latestWeather, checksDone, meals, mealTotal, exercises, exerciseTotal };
@@ -2713,10 +2748,19 @@ function buildShareData() {
     tdeeHi = Math.round(raw * 1.7 / 10) * 10;
   }
 
+  // Flatten exercise events into per-item entries so the share card and
+  // text dump can iterate over each workout line individually.
   const exEvents = entry.events
     .filter(e => e.type === 'exercise')
     .slice()
-    .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+    .sort((a, b) => (a.time || '').localeCompare(b.time || ''))
+    .flatMap(e => exerciseItems(e).map(it => ({
+      time: e.time,
+      name: it.name || '',
+      value: '',
+      kcal: it.kcal ?? '',
+      images: Array.isArray(e.images) ? e.images : []
+    })));
 
   const todayNote = entry.events
     .filter(e => e.type === 'note' && (e.kind === 'today' || !e.kind))

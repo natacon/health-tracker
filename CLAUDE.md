@@ -38,6 +38,8 @@ Then open `http://localhost:8000`. Service worker only registers over HTTPS or l
 
 Each day is `{ events: [...] }` where every event has `{ id, time, type, ...payload }`. Types are `weight | meal | exercise | mood | weather | check`. Older days may have been stored in a denormalized shape (single weight/meals string/etc.); `migrateEntry()` converts those to the events array on read. Always write the events shape — never reintroduce the old fields.
 
+**Meal and exercise records hold an `items: [...]` array.** A single record represents one sitting/session containing multiple line items — `{ text, kcal }` for meals, `{ name, kcal }` for exercise. The form is always multi-row (`formMealRows` / `formExerciseRows`); on save the rows become the event's `items`. Reads stay tolerant of the older flat shape (`event.text` / `event.name` / `event.kcal`) via `mealItems()` / `exerciseItems()` helpers, which return the items array or fall back to a single synthesized item. Aggregations (`aggregate()`, `buildShareData`'s `exEvents`) flatten `items` into per-item rows so downstream rendering stays unchanged.
+
 The `aggregate()` function reduces an events array to per-day summaries (latest weight/mood/weather wins, checks are presence-based, meal/exercise totals sum kcal). This is what powers both the Preview tab and history rows.
 
 ### Storage: OPFS first, localStorage fallback
@@ -71,7 +73,7 @@ Favorites for `meal` and `exercise` live in `settings.favorites[type]`. Tapping 
 
 ## Things that bite
 
-- **Bump `CACHE` in `sw.js`** on every user-facing change, otherwise the old cached `index.html` keeps serving. Currently `health-tracker-v21`.
+- **Bump `CACHE` in `sw.js`** on every user-facing change, otherwise the old cached `index.html` keeps serving. Currently `health-tracker-v22`.
 - **OPFS is per-origin and per-browser**: data does not sync across devices. Use the export/import buttons.
 - The SW's fetch handler falls back to `./index.html` on navigation when offline — keep that intact for the PWA experience.
 - The `start_url` and `scope` in `manifest.json` are `.` so the app works at any subpath (e.g. `/health-tracker/` on Pages).
