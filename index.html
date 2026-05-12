@@ -380,7 +380,7 @@
     max-width: 100%;
   }
   .fav-chip:hover { border-color: var(--accent); transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
-  .fav-chip > span:not(.fav-tag):not(.fav-del):not(.fav-thumb) {
+  .fav-chip > span:not(.fav-tag):not(.fav-del) {
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     max-width: 220px;
   }
@@ -389,11 +389,6 @@
     font-size: 10px; font-weight: 700;
     padding: 2px 6px; border-radius: 4px;
     letter-spacing: 0.05em;
-    flex-shrink: 0;
-  }
-  .fav-chip .fav-thumb {
-    width: 36px; height: 22px;
-    object-fit: cover; border-radius: 3px;
     flex-shrink: 0;
   }
   .fav-chip .fav-del {
@@ -411,24 +406,6 @@
     margin-bottom: 10px;
     padding-bottom: 10px;
     border-bottom: 1px dashed var(--line);
-  }
-
-  /* ---------- Exercise URL/thumbnail ---------- */
-  .tl-event .body .ex-thumb {
-    display: inline-block; vertical-align: middle;
-    margin-right: 8px;
-  }
-  .tl-event .body .ex-thumb img {
-    width: 80px; height: 45px;
-    object-fit: cover; border-radius: 4px;
-    display: block;
-  }
-
-  .thumb-preview { margin-top: 6px; }
-  .thumb-preview img {
-    max-width: 220px; height: auto;
-    border-radius: 6px;
-    border: 1px solid var(--line);
   }
 
   /* ---------- Image attachments ---------- */
@@ -541,7 +518,7 @@
     grid-template-columns: 1fr 78px auto;
   }
   .batch-row.exercise-row {
-    grid-template-columns: 1.4fr 1fr 70px auto;
+    grid-template-columns: 1fr 78px auto;
   }
   .batch-row input[type="number"] {
     padding: 6px 8px;
@@ -868,8 +845,7 @@
       <h2>★ いつものリスト</h2>
       <div id="favListBody"></div>
       <p style="font-size:12px;color:var(--ink-soft);margin-top:14px">
-        食事や運動の追加フォームから「★いつもの」ボタンで登録すると、フォーム上部のチップから次回ワンタップで記録できます。<br>
-        運動にYouTubeのURLを貼ると、サムネイルが自動表示されます。
+        食事や運動の追加フォームから「★いつもの」ボタンで登録すると、フォーム上部のチップから次回ワンタップで記録できます。
       </p>
     </section>
 
@@ -1379,23 +1355,6 @@ let formImages = [];
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 
-function youtubeId(url) {
-  if (!url || typeof url !== 'string') return null;
-  try {
-    const u = new URL(url);
-    if (u.hostname === 'youtu.be') return (u.pathname.slice(1).split('/')[0]) || null;
-    if (u.hostname.endsWith('youtube.com') || u.hostname.endsWith('youtube-nocookie.com')) {
-      if (u.pathname === '/watch') return u.searchParams.get('v');
-      const m = u.pathname.match(/^\/(?:embed|shorts|live|v)\/([^/?#]+)/);
-      if (m) return m[1];
-    }
-  } catch {}
-  return null;
-}
-function youtubeThumb(id) {
-  return `https://img.youtube.com/vi/${id}/mqdefault.jpg`;
-}
-
 function todayStr() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -1591,14 +1550,12 @@ function buildAddForm(type, prefill = null) {
     }
   } else if (type === 'exercise') {
     if (editingId) {
+      const editName = `${prefill?.name || ''}${prefill?.value ? ' ' + prefill.value : ''}`.trim();
       inner = `
         ${imagePickerHtml()}
         <div class="field"><label>時刻</label><input type="time" data-f="time" value="${time}"></div>
-        <div class="field"><label>種目</label><input type="text" data-f="name" placeholder="歩数 / YouTube など" value="${escapeHtml(prefill?.name ?? '')}"></div>
-        <div class="field"><label>内容</label><input type="text" data-f="value" placeholder="8,420歩 / 20分" value="${escapeHtml(prefill?.value ?? '')}"></div>
-        <div class="field"><label>消費kcal</label><input type="number" data-f="kcal" placeholder="200" value="${prefill?.kcal ?? ''}"><span class="unit">kcal</span><button type="button" class="ghost" data-act="estimate-kcal" title="自動取得（Open Food Facts / Wikipedia / 運動はMET推定）">🔍 推定</button></div>
-        <div class="field"><label>URL</label><input type="url" data-f="url" placeholder="YouTubeリンクなど" value="${escapeHtml(prefill?.url ?? '')}"></div>
-        <div class="thumb-preview" data-thumb-preview></div>
+        <div class="field"><label>内容</label><input type="text" data-f="name" placeholder="ヨガ 20分 など" value="${escapeHtml(editName)}"></div>
+        <div class="field"><label>消費kcal</label><input type="number" data-f="kcal" placeholder="200" value="${prefill?.kcal ?? ''}"><span class="unit">kcal</span><button type="button" class="ghost" data-act="estimate-kcal" title="MET推定">🔍 推定</button></div>
       `;
     } else {
       inner = `
@@ -1706,14 +1663,11 @@ function buildFavoritesRow(type) {
         <span class="fav-del" data-fav-del="${i}" title="お気に入りから削除">×</span>
       </button>`;
     } else {
-      const id = youtubeId(f.url);
-      const thumb = id ? `<img class="fav-thumb" src="${youtubeThumb(id)}" alt="" loading="lazy">` : '';
       const k = parseFloat(f.kcal);
       const sub = Number.isFinite(k) ? ` ${k}kcal` : '';
-      const valuePart = f.value ? ` ${escapeHtml(f.value)}` : '';
+      const text = `${f.name || ''}${f.value ? ' ' + f.value : ''}`.trim();
       return `<button type="button" class="fav-chip" data-fav-index="${i}" title="タップで追加">
-        ${thumb}
-        <span>${escapeHtml(f.name || '')}${valuePart}${sub}</span>
+        <span>${escapeHtml(text)}${sub}</span>
         <span class="fav-del" data-fav-del="${i}" title="お気に入りから削除">×</span>
       </button>`;
     }
@@ -1733,7 +1687,7 @@ function openAddForm(type, prefill = null) {
     formMealRows = [{ text: '', kcal: '' }];
   }
   if (type === 'exercise' && !editingId) {
-    formExerciseRows = [{ name: '', value: '', kcal: '' }];
+    formExerciseRows = [{ name: '', kcal: '' }];
   }
   const form = document.getElementById('addForm');
   form.classList.remove('hide');
@@ -1828,26 +1782,13 @@ function openAddForm(type, prefill = null) {
     renderExerciseRows(form);
     const addBtn = form.querySelector('[data-er-add]');
     if (addBtn) addBtn.onclick = () => {
-      formExerciseRows.push({ name: '', value: '', kcal: '' });
+      formExerciseRows.push({ name: '', kcal: '' });
       renderExerciseRows(form);
     };
     const estBtn = form.querySelector('[data-er-estimate]');
     if (estBtn) estBtn.onclick = () => estimateAllExerciseRows(estBtn);
   }
 
-  // URL → YouTubeサムネ即時プレビュー
-  const urlInput = form.querySelector('[data-f="url"]');
-  const thumbDiv = form.querySelector('[data-thumb-preview]');
-  if (urlInput && thumbDiv) {
-    const updateThumb = () => {
-      const id = youtubeId(urlInput.value);
-      thumbDiv.innerHTML = id
-        ? `<img src="${youtubeThumb(id)}" alt="" loading="lazy">`
-        : '';
-    };
-    urlInput.addEventListener('input', updateThumb);
-    updateThumb();
-  }
 }
 
 function resetFormImages() {
@@ -1928,11 +1869,10 @@ async function runExerciseOcr(form, blob) {
     const text = (r?.data?.text || '').trim();
     const entries = parseYouTubeOcr(text);
     if (Array.isArray(formExerciseRows)) {
-      // New-entry multi-row mode: replace empty rows with OCR results
-      const hasContent = formExerciseRows.some(r => (r.name || '').trim() || (r.value || '').trim());
+      const hasContent = formExerciseRows.some(r => (r.name || '').trim());
       const newRows = entries.length
-        ? entries.map(e => ({ name: e.name, value: e.value || '', kcal: '' }))
-        : [{ name: text.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').slice(0, 100), value: '', kcal: '' }];
+        ? entries.map(e => ({ name: `${e.name}${e.value ? ' ' + e.value : ''}`.trim(), kcal: '' }))
+        : [{ name: text.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').slice(0, 100), kcal: '' }];
       if (hasContent) {
         formExerciseRows.push(...newRows);
       } else {
@@ -1942,17 +1882,16 @@ async function runExerciseOcr(form, blob) {
       setStatus(`${newRows.length}件検出 ✓`);
       return;
     }
-    // Edit mode (single-row): fall through to name field
+    // Edit mode (single-row): fall through to 内容 field
     const nameInput = form.querySelector('[data-f="name"]');
     if (nameInput && !nameInput.value.trim()) {
-      const single = entries[0]?.name || text.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').slice(0, 100);
+      const e0 = entries[0];
+      const single = e0
+        ? `${e0.name}${e0.value ? ' ' + e0.value : ''}`.trim()
+        : text.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').slice(0, 100);
       if (single) {
         nameInput.value = single;
         nameInput.dispatchEvent(new Event('input', { bubbles: true }));
-      }
-      const valueInput = form.querySelector('[data-f="value"]');
-      if (valueInput && entries[0]?.value && !valueInput.value.trim()) {
-        valueInput.value = entries[0].value;
       }
     }
     setStatus('文字起こし ✓');
@@ -2055,8 +1994,7 @@ function renderExerciseRows(form) {
   if (!list || !Array.isArray(formExerciseRows)) return;
   list.innerHTML = formExerciseRows.map((r, i) => `
     <div class="batch-row exercise-row" data-row="${i}">
-      <input type="text" data-er="name" placeholder="種目" value="${escapeHtml(r.name || '')}">
-      <input type="text" data-er="value" placeholder="20分" value="${escapeHtml(r.value || '')}">
+      <input type="text" data-er="name" placeholder="ヨガ 20分 など" value="${escapeHtml(r.name || '')}">
       <input type="number" data-er="kcal" placeholder="kcal" value="${r.kcal ?? ''}">
       <button type="button" class="batch-del" data-er="del" title="削除">×</button>
     </div>
@@ -2064,11 +2002,10 @@ function renderExerciseRows(form) {
   list.querySelectorAll('.batch-row').forEach(row => {
     const i = parseInt(row.dataset.row, 10);
     row.querySelector('[data-er="name"]').oninput = e => { formExerciseRows[i].name = e.target.value; };
-    row.querySelector('[data-er="value"]').oninput = e => { formExerciseRows[i].value = e.target.value; };
     row.querySelector('[data-er="kcal"]').oninput = e => { formExerciseRows[i].kcal = e.target.value; };
     row.querySelector('[data-er="del"]').onclick = () => {
       formExerciseRows.splice(i, 1);
-      if (formExerciseRows.length === 0) formExerciseRows.push({ name: '', value: '', kcal: '' });
+      if (formExerciseRows.length === 0) formExerciseRows.push({ name: '', kcal: '' });
       renderExerciseRows(form);
     };
   });
@@ -2083,11 +2020,10 @@ async function estimateAllExerciseRows(btn) {
     for (let i = 0; i < formExerciseRows.length; i++) {
       const r = formExerciseRows[i];
       const name = (r.name || '').trim();
-      const value = (r.value || '').trim();
       if (!name || (r.kcal !== '' && r.kcal != null)) continue;
-      const mins = detectMinutes(value);
+      const mins = detectMinutes(name);
       if (!mins) continue;
-      const met = detectMET(name, value);
+      const met = detectMET(name);
       r.kcal = Math.round(met * weight * (mins / 60));
     }
     const form = document.getElementById('addForm');
@@ -2217,10 +2153,9 @@ const MET_DICT = [
   [/(?:有酸素|カーディオ|cardio)/i, 6.0]
 ];
 
-function detectMET(name, value) {
-  const haystack = `${name || ''} ${value || ''}`;
+function detectMET(text) {
   for (const [re, met] of MET_DICT) {
-    if (re.test(haystack)) return met;
+    if (re.test(text || '')) return met;
   }
   return 5.0; // default for unrecognized workouts
 }
@@ -2243,12 +2178,12 @@ function detectMinutes(value) {
   return null;
 }
 
-async function lookupExerciseKcal(name, value) {
-  const n = (name || '').trim();
-  if (!n) throw new Error('種目を入力してから検索してください');
-  const minutes = detectMinutes(value);
-  if (!minutes) throw new Error('内容に「20分」「30分」など継続時間を入れて下さい');
-  const met = detectMET(n, value);
+async function lookupExerciseKcal(text) {
+  const n = (text || '').trim();
+  if (!n) throw new Error('内容を入力してから検索してください');
+  const minutes = detectMinutes(n);
+  if (!minutes) throw new Error('「20分」「30分」など継続時間を含めてください');
+  const met = detectMET(n);
   const weight = latestKnownWeight() || 50;
   return Math.round(met * weight * (minutes / 60));
 }
@@ -2260,8 +2195,7 @@ function openGoogleSearchFallback(type, form) {
     q = `${text} カロリー`;
   } else if (type === 'exercise') {
     const name = (form.querySelector('[data-f="name"]')?.value || '').trim();
-    const v = (form.querySelector('[data-f="value"]')?.value || '').trim();
-    q = `${name}${v ? ' ' + v : ''} 消費カロリー`;
+    q = `${name} 消費カロリー`;
   }
   window.open(`https://www.google.com/search?q=${encodeURIComponent(q)}`, '_blank', 'noopener');
 }
@@ -2276,10 +2210,7 @@ async function runKcalLookup(form, type, btn) {
     if (type === 'meal') {
       n = await lookupMealKcal(form.querySelector('[data-f="text"]')?.value || '');
     } else if (type === 'exercise') {
-      n = await lookupExerciseKcal(
-        form.querySelector('[data-f="name"]')?.value || '',
-        form.querySelector('[data-f="value"]')?.value || ''
-      );
+      n = await lookupExerciseKcal(form.querySelector('[data-f="name"]')?.value || '');
     }
     if (Number.isFinite(n) && kcalInput) {
       kcalInput.value = n;
@@ -2345,10 +2276,8 @@ function addEventFromFavorite(type, i) {
     ev.text = fav.text;
     ev.kcal = fav.kcal;
   } else {
-    ev.name = fav.name;
-    ev.value = fav.value;
+    ev.name = `${fav.name || ''}${fav.value ? ' ' + fav.value : ''}`.trim();
     ev.kcal = fav.kcal;
-    if (fav.url) ev.url = fav.url;
   }
   entry.events.push(ev);
   cancelAddForm();
@@ -2378,11 +2307,9 @@ function saveFavoriteFromForm() {
     if (!fav.text) { alert('内容を入力してください'); return; }
   } else if (activeAddType === 'exercise') {
     fav.name = get('name').trim();
-    fav.value = get('value').trim();
     const k = get('kcal');
     fav.kcal = k === '' ? '' : parseFloat(k);
-    fav.url = get('url').trim();
-    if (!fav.name) { alert('種目を入力してください'); return; }
+    if (!fav.name) { alert('内容を入力してください'); return; }
   } else {
     return;
   }
@@ -2477,25 +2404,24 @@ async function saveAddForm() {
   // Exercise batch mode (new entries): register multiple events from rows
   if (activeAddType === 'exercise' && !editingId && Array.isArray(formExerciseRows)) {
     const rows = formExerciseRows
-      .map(r => ({ name: (r.name || '').trim(), value: (r.value || '').trim(), kcal: r.kcal }))
+      .map(r => ({ name: (r.name || '').trim(), kcal: r.kcal }))
       .filter(r => r.name);
     if (rows.length === 0 && formImages.length === 0) {
-      alert('種目か写真を入力してください');
+      alert('内容か写真を入力してください');
       return;
     }
     const filenames = await commitFormImages(null);
     const sharedImages = filenames.length ? filenames : null;
     if (rows.length === 0 && sharedImages) {
-      entry.events.push({ id: uid(), time, type: 'exercise', name: '', value: '', kcal: '', images: sharedImages.slice() });
+      entry.events.push({ id: uid(), time, type: 'exercise', name: '', kcal: '', images: sharedImages.slice() });
     } else {
       for (const r of rows) {
         const ev = { id: uid(), time, type: 'exercise', name: r.name };
-        if (r.value) ev.value = r.value;
         let kcal = r.kcal === '' || r.kcal == null ? '' : parseFloat(r.kcal);
-        if (kcal === '' && r.value) {
-          const mins = detectMinutes(r.value);
+        if (kcal === '') {
+          const mins = detectMinutes(r.name);
           if (mins) {
-            const met = detectMET(r.name, r.value);
+            const met = detectMET(r.name);
             const weight = latestKnownWeight() || 50;
             kcal = Math.round(met * weight * (mins / 60));
           }
@@ -2529,13 +2455,11 @@ async function saveAddForm() {
     payload.kcal = kcal === '' ? '' : parseFloat(kcal);
   } else if (activeAddType === 'exercise') {
     const name = get('name').trim();
-    if (!name) { alert('種目を入力してください'); return; }
+    if (!name) { alert('内容を入力してください'); return; }
     payload.name = name;
-    payload.value = get('value').trim();
+    payload.value = '';
     const kcal = get('kcal');
     payload.kcal = kcal === '' ? '' : parseFloat(kcal);
-    const url = get('url').trim();
-    if (url) payload.url = url;
   } else if (activeAddType === 'mood') {
     const v = getSeg('value');
     if (!v) { alert('気分を選んでください'); return; }
@@ -2612,9 +2536,8 @@ function eventBodyHtml(e) {
   }
   if (e.type === 'exercise') {
     const k = parseFloat(e.kcal);
-    const id = youtubeId(e.url);
-    const thumb = id ? `<a href="${escapeHtml(e.url)}" target="_blank" rel="noopener" class="ex-thumb"><img src="${youtubeThumb(id)}" alt="" loading="lazy"></a>` : '';
-    const main = `${thumb}<b>${escapeHtml(e.name || '')}</b>${e.value ? ` <span class="sub">${escapeHtml(e.value)}</span>` : ''}${Number.isFinite(k) ? ` <span class="kcal">${k.toLocaleString()} kcal</span>` : ''}`;
+    const text = `${e.name || ''}${e.value ? ' ' + e.value : ''}`.trim();
+    const main = `<b>${escapeHtml(text)}</b>${Number.isFinite(k) ? ` <span class="kcal">${k.toLocaleString()} kcal</span>` : ''}`;
     return main + imageStripHtml(e.images);
   }
   if (e.type === 'mood') return `${MOOD_LABELS[e.value] || '—'}`;
@@ -2705,7 +2628,6 @@ function aggregate(events) {
     name: e.name || '',
     value: e.value || '',
     kcal: parseFloat(e.kcal),
-    url: e.url || '',
     images: Array.isArray(e.images) ? e.images : []
   }));
   const exerciseTotal = exercises.reduce((s, e) => s + (Number.isFinite(e.kcal) ? e.kcal : 0), 0);
@@ -2836,9 +2758,9 @@ function renderPreview() {
     const k = parseFloat(e.kcal);
     const kStr = Number.isFinite(k) ? ` <span style="color:#9a6b78">(${k} kcal)</span>` : '';
     const t = e.time ? `<span style="color:#9a6b78">(${escapeHtml(e.time)})</span>` : '';
-    const valuePart = e.value ? ` <span style="color:#6b6b6b">${escapeHtml(e.value)}</span>` : '';
+    const text = `${e.name || ''}${e.value ? ' ' + e.value : ''}`.trim();
     const imgs = imageStripHtml(e.images);
-    return `<div class="ex-item">・${escapeHtml(e.name || '')}${valuePart} ${t}${kStr}${imgs}</div>`;
+    return `<div class="ex-item">・${escapeHtml(text)} ${t}${kStr}${imgs}</div>`;
   };
   let exBodyHtml = '';
   if (stepsEv) {
@@ -3071,13 +2993,11 @@ function renderFavList() {
   if (exes.length) {
     html += '<div class="fav-list-group">🏃 運動</div>';
     html += exes.map((f, i) => {
-      const id = youtubeId(f.url);
-      const thumb = id ? `<img src="${youtubeThumb(id)}" alt="" loading="lazy">` : '';
       const k = parseFloat(f.kcal);
       const sub = Number.isFinite(k) ? ` · ${k}kcal` : '';
-      const valuePart = f.value ? ` · ${escapeHtml(f.value)}` : '';
+      const text = `${f.name || ''}${f.value ? ' ' + f.value : ''}`.trim();
       return `<div class="fav-list-item">
-        <div class="info">${thumb}<span>${escapeHtml(f.name || '')}${valuePart}${sub}</span></div>
+        <div class="info"><span>${escapeHtml(text)}${sub}</span></div>
         <button class="ghost danger" data-fav-ex-del="${i}">削除</button>
       </div>`;
     }).join('');
@@ -3228,13 +3148,19 @@ function handleShareIntent() {
   const sharedText = params.get('text') || '';
   const sharedTitle = params.get('title') || '';
   if (!sharedUrl && !sharedText && !sharedTitle) return;
-  const urlMatch = sharedText.match(/https?:\/\/\S+/);
-  const url = sharedUrl || (urlMatch ? urlMatch[0] : '');
   const cleanText = sharedText.replace(/https?:\/\/\S+/g, '').trim();
-  const name = sharedTitle || cleanText || '';
+  const name = (sharedTitle || cleanText || '').trim();
   switchTab('timeline');
   editingId = null;
-  openAddForm('exercise', { url, name });
+  openAddForm('exercise');
+  if (name) {
+    const form = document.getElementById('addForm');
+    const first = form.querySelector('[data-er="name"]');
+    if (first) {
+      first.value = name;
+      if (Array.isArray(formExerciseRows) && formExerciseRows[0]) formExerciseRows[0].name = name;
+    }
+  }
   history.replaceState({}, '', location.pathname);
 }
 
