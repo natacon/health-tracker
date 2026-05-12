@@ -361,53 +361,6 @@
 
   .hide { display: none !important; }
 
-  /* ---------- Favorites ---------- */
-  .fav-row {
-    display: flex; flex-wrap: wrap; gap: 6px;
-    margin-bottom: 10px;
-    padding-bottom: 10px;
-    border-bottom: 1px dashed var(--line);
-  }
-  .fav-chip {
-    position: relative;
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 6px 24px 6px 10px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.7);
-    border: 1px solid var(--line);
-    font-size: 12px;
-    cursor: pointer;
-    max-width: 100%;
-  }
-  .fav-chip:hover { border-color: var(--accent); transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
-  .fav-chip > span:not(.fav-tag):not(.fav-del) {
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    max-width: 220px;
-  }
-  .fav-chip .fav-tag {
-    background: var(--accent); color: #fff;
-    font-size: 10px; font-weight: 700;
-    padding: 2px 6px; border-radius: 4px;
-    letter-spacing: 0.05em;
-    flex-shrink: 0;
-  }
-  .fav-chip .fav-del {
-    position: absolute;
-    right: 4px; top: 50%; transform: translateY(-50%);
-    width: 18px; height: 18px;
-    line-height: 16px; text-align: center;
-    border-radius: 50%;
-    color: var(--ink-faint);
-    font-size: 14px;
-  }
-  .fav-chip .fav-del:hover { background: rgba(0, 0, 0, 0.08); color: var(--bad); }
-  .fav-row-empty {
-    font-size: 11px; color: var(--ink-faint);
-    margin-bottom: 10px;
-    padding-bottom: 10px;
-    border-bottom: 1px dashed var(--line);
-  }
-
   /* ---------- Image attachments ---------- */
   .img-picker {
     margin-top: 6px;
@@ -574,33 +527,7 @@
   }
   .batch-panel .batch-actions button { font-size: 12px; padding: 6px 10px; }
 
-  /* ---------- Settings: fav list ---------- */
-  .fav-list-group { font-size: 12px; color: var(--ink-soft); margin: 12px 0 6px; letter-spacing: 0.05em; }
-  .fav-list-item {
-    display: flex; justify-content: space-between; align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.5);
-    font-size: 13px;
-    margin-bottom: 6px;
-  }
-  .fav-list-item .info { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; }
-  .fav-list-item .info img {
-    width: 48px; height: 27px;
-    object-fit: cover; border-radius: 3px;
-    flex-shrink: 0;
-  }
-  .fav-list-item .info > span:last-child {
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
-  .fav-list-item .fav-tag {
-    background: var(--accent); color: #fff;
-    font-size: 10px; font-weight: 700;
-    padding: 2px 6px; border-radius: 4px;
-    flex-shrink: 0;
-  }
+
 
   /* ---------- SNS Share Card (preview tab) ---------- */
   .share-card {
@@ -865,14 +792,6 @@
     </section>
 
     <section>
-      <h2>★ いつものリスト</h2>
-      <div id="favListBody"></div>
-      <p style="font-size:12px;color:var(--ink-soft);margin-top:14px">
-        食事や運動の追加フォームから「★いつもの」ボタンで登録すると、フォーム上部のチップから次回ワンタップで記録できます。
-      </p>
-    </section>
-
-    <section>
       <h2>保存先</h2>
       <div class="storage-info" id="storageInfo">読み込み中…</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -918,12 +837,10 @@ const storage = {
 
   async init() {
     settings = Object.assign(
-      { goalWeight: 46, height: 158, age: 35, favorites: { meal: [], exercise: [] } },
+      { goalWeight: 46, height: 158, age: 35 },
       JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}')
     );
-    if (!settings.favorites || typeof settings.favorites !== 'object') settings.favorites = { meal: [], exercise: [] };
-    if (!Array.isArray(settings.favorites.meal)) settings.favorites.meal = [];
-    if (!Array.isArray(settings.favorites.exercise)) settings.favorites.exercise = [];
+    delete settings.favorites; // deprecated
 
     if (this.isOpfsAvailable()) {
       try {
@@ -1104,7 +1021,7 @@ const storage = {
   }
 };
 
-let settings = { goalWeight: 46, height: 158, age: 35, favorites: { meal: [], exercise: [] } };
+let settings = { goalWeight: 46, height: 158, age: 35 };
 function saveSettings() {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
 }
@@ -1535,9 +1452,8 @@ function buildAddForm(type, prefill = null) {
     `;
   } else if (type === 'meal') {
     const defaultLabel = prefill?.label ?? mealLabelForTime(time);
-    const favs = (settings.favorites?.meal || []);
-    const favTexts = [...new Set(favs.map(f => (f.text || '').trim()).filter(Boolean))];
-    const datalist = `<datalist id="mealTextList">${favTexts.map(t => `<option value="${escapeHtml(t)}"></option>`).join('')}</datalist>`;
+    const histTexts = historicalMealTexts();
+    const datalist = `<datalist id="mealTextList">${histTexts.map(o => `<option value="${escapeHtml(o.key)}"></option>`).join('')}</datalist>`;
     inner = `
       ${datalist}
       <div class="field"><label>時刻</label><input type="time" data-f="time" value="${time}"></div>
@@ -1547,25 +1463,26 @@ function buildAddForm(type, prefill = null) {
         </div>
       </div>
       <div class="batch-panel" data-meal-rows>
-        <div class="batch-head"><b>食事内容</b><span style="color:var(--ink-soft);font-size:11px">複数行いっぺんに登録できます</span></div>
+        <div class="batch-head"><b>食事内容</b><span style="color:var(--ink-soft);font-size:11px">複数行いっぺんに登録できます。kcal は保存後に自動入力されます。</span></div>
         <div class="batch-rows" data-meal-rows-list></div>
         <div class="batch-actions">
           <button type="button" class="ghost" data-mr-add>+ 行を追加</button>
-          <button type="button" class="ghost" data-mr-estimate>🔍 全て推定</button>
         </div>
       </div>
       ${imagePickerHtml()}
     `;
   } else if (type === 'exercise') {
+    const histNames = historicalExerciseNames();
+    const exDatalist = `<datalist id="exerciseNameList">${histNames.map(o => `<option value="${escapeHtml(o.key)}"></option>`).join('')}</datalist>`;
     inner = `
+      ${exDatalist}
       ${imagePickerHtml()}
       <div class="field"><label>時刻</label><input type="time" data-f="time" value="${time}"></div>
       <div class="batch-panel" data-ex-rows>
-        <div class="batch-head"><b>運動内容</b><span style="color:var(--ink-soft);font-size:11px">画像を添付するとOCRで自動入力、複数行いっぺんに登録できます</span></div>
+        <div class="batch-head"><b>運動内容</b><span style="color:var(--ink-soft);font-size:11px">画像を添付するとOCRで自動入力。kcal は保存後に自動推定されます。</span></div>
         <div class="batch-rows" data-ex-rows-list></div>
         <div class="batch-actions">
           <button type="button" class="ghost" data-er-add>+ 行を追加</button>
-          <button type="button" class="ghost" data-er-estimate>🔍 全て推定</button>
         </div>
       </div>
     `;
@@ -1614,16 +1531,10 @@ function buildAddForm(type, prefill = null) {
     `;
   }
 
-  const showFavs = (type === 'meal' || type === 'exercise') && !editingId;
-  const favRow = showFavs ? buildFavoritesRow(type) : '';
-  const favBtn = showFavs ? `<button type="button" class="ghost" data-act="save-fav" title="この内容をいつものリストに登録">★ いつもの</button>` : '';
-
   return `
-    ${favRow}
     ${inner}
     <div class="actions">
       <button type="button" class="ghost" data-act="cancel">キャンセル</button>
-      ${favBtn}
       <button type="button" class="primary" data-act="save">${editingId ? '更新' : '追加'}</button>
     </div>
   `;
@@ -1644,33 +1555,6 @@ function imagePickerHtml() {
       </div>
     </div>
   `;
-}
-
-function buildFavoritesRow(type) {
-  const favs = (settings.favorites && settings.favorites[type]) || [];
-  if (favs.length === 0) {
-    return `<div class="fav-row-empty">★いつもの登録はまだありません。下の「★いつもの」で次回からワンタップ追加できます。</div>`;
-  }
-  const items = favs.map((f, i) => {
-    if (type === 'meal') {
-      const k = parseFloat(f.kcal);
-      const sub = Number.isFinite(k) ? ` ${k}kcal` : '';
-      return `<button type="button" class="fav-chip" data-fav-index="${i}" title="タップで追加">
-        <span class="fav-tag">${escapeHtml(f.label || '')}</span>
-        <span>${escapeHtml(f.text || '')}${sub}</span>
-        <span class="fav-del" data-fav-del="${i}" title="お気に入りから削除">×</span>
-      </button>`;
-    } else {
-      const k = parseFloat(f.kcal);
-      const sub = Number.isFinite(k) ? ` ${k}kcal` : '';
-      const text = `${f.name || ''}${f.value ? ' ' + f.value : ''}`.trim();
-      return `<button type="button" class="fav-chip" data-fav-index="${i}" title="タップで追加">
-        <span>${escapeHtml(text)}${sub}</span>
-        <span class="fav-del" data-fav-del="${i}" title="お気に入りから削除">×</span>
-      </button>`;
-    }
-  }).join('');
-  return `<div class="fav-row">${items}</div>`;
 }
 
 function openAddForm(type, prefill = null) {
@@ -1728,13 +1612,9 @@ function openAddForm(type, prefill = null) {
 
   form.querySelector('[data-act="cancel"]').onclick = cancelAddForm;
   form.querySelector('[data-act="save"]').onclick = saveAddForm;
-  const favSaveBtn = form.querySelector('[data-act="save-fav"]');
-  if (favSaveBtn) favSaveBtn.onclick = saveFavoriteFromForm;
 
   const estimateBtn = form.querySelector('[data-act="estimate-kcal"]');
   if (estimateBtn) estimateBtn.onclick = () => runKcalLookup(form, type, estimateBtn);
-
-  bindFavChips(type);
 
   // 時刻 → 食事区分の自動選択（ユーザーが手動で区分を選んだら追従しない）
   if (type === 'meal') {
@@ -1754,30 +1634,7 @@ function openAddForm(type, prefill = null) {
         });
       });
     }
-    // 編集モード時のみ: 内容（datalist）が ★いつもの と一致したら kcal/区分 を自動補完
-    if (editingId) {
-      const textInput = form.querySelector('[data-f="text"]');
-      if (textInput) {
-        const applyFavMatch = () => {
-          const v = textInput.value.trim();
-          if (!v) return;
-          const fav = (settings.favorites?.meal || []).find(f => (f.text || '').trim() === v);
-          if (!fav) return;
-          const kcalInput = form.querySelector('[data-f="kcal"]');
-          if (kcalInput && !kcalInput.value && Number.isFinite(parseFloat(fav.kcal))) {
-            kcalInput.value = fav.kcal;
-          }
-          if (labelSeg && fav.label) {
-            labelSeg.querySelectorAll('button').forEach(b => {
-              b.classList.toggle('on', b.dataset.val === fav.label);
-            });
-          }
-        };
-        textInput.addEventListener('change', applyFavMatch);
-        textInput.addEventListener('input', applyFavMatch);
-      }
-    }
-    // 新規追加モード: 複数行リストを描画
+    // 複数行リストを描画
     if (Array.isArray(formMealRows)) {
       renderMealRows(form);
       const addBtn = form.querySelector('[data-mr-add]');
@@ -1785,8 +1642,6 @@ function openAddForm(type, prefill = null) {
         formMealRows.push({ text: '', kcal: '' });
         renderMealRows(form);
       };
-      const estBtn = form.querySelector('[data-mr-estimate]');
-      if (estBtn) estBtn.onclick = () => estimateAllMealRows(estBtn);
     }
   }
 
@@ -1798,8 +1653,6 @@ function openAddForm(type, prefill = null) {
       formExerciseRows.push({ name: '', kcal: '' });
       renderExerciseRows(form);
     };
-    const estBtn = form.querySelector('[data-er-estimate]');
-    if (estBtn) estBtn.onclick = () => estimateAllExerciseRows(estBtn);
   }
 
 }
@@ -1933,11 +1786,10 @@ function renderMealRows(form) {
     const kcalInput = row.querySelector('[data-mr="kcal"]');
     textInput.oninput = () => {
       formMealRows[i].text = textInput.value;
-      const v = textInput.value.trim();
-      const fav = v ? (settings.favorites?.meal || []).find(f => (f.text || '').trim() === v) : null;
-      if (fav && !kcalInput.value && Number.isFinite(parseFloat(fav.kcal))) {
-        kcalInput.value = fav.kcal;
-        formMealRows[i].kcal = parseFloat(fav.kcal);
+      const k = lastKcalForMealText(textInput.value);
+      if (k != null && !kcalInput.value) {
+        kcalInput.value = k;
+        formMealRows[i].kcal = k;
       }
     };
     kcalInput.oninput = () => { formMealRows[i].kcal = kcalInput.value; };
@@ -1947,29 +1799,6 @@ function renderMealRows(form) {
       renderMealRows(form);
     };
   });
-}
-
-async function estimateAllMealRows(btn) {
-  const original = btn.textContent;
-  btn.disabled = true;
-  btn.textContent = '推定中…';
-  try {
-    for (let i = 0; i < formMealRows.length; i++) {
-      const r = formMealRows[i];
-      const text = (r.text || '').trim();
-      if (!text || (r.kcal !== '' && r.kcal != null)) continue;
-      try {
-        const k = await lookupMealKcal(text);
-        if (Number.isFinite(k)) r.kcal = k;
-      } catch {}
-    }
-    const form = document.getElementById('addForm');
-    renderMealRows(form);
-    setStatus('推定 ✓');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = original;
-  }
 }
 
 // Exercise multi-row state (default for new entries, OCR populates these rows)
@@ -2036,45 +1865,30 @@ function renderExerciseRows(form) {
   if (!list || !Array.isArray(formExerciseRows)) return;
   list.innerHTML = formExerciseRows.map((r, i) => `
     <div class="batch-row exercise-row" data-row="${i}">
-      <input type="text" data-er="name" placeholder="ヨガ 20分 など" value="${escapeHtml(r.name || '')}">
+      <input type="text" data-er="name" list="exerciseNameList" placeholder="ヨガ 20分 など" value="${escapeHtml(r.name || '')}">
       <input type="number" data-er="kcal" placeholder="kcal" value="${r.kcal ?? ''}">
       <button type="button" class="batch-del" data-er="del" title="削除">×</button>
     </div>
   `).join('');
   list.querySelectorAll('.batch-row').forEach(row => {
     const i = parseInt(row.dataset.row, 10);
-    row.querySelector('[data-er="name"]').oninput = e => { formExerciseRows[i].name = e.target.value; };
-    row.querySelector('[data-er="kcal"]').oninput = e => { formExerciseRows[i].kcal = e.target.value; };
+    const nameInput = row.querySelector('[data-er="name"]');
+    const kcalInput = row.querySelector('[data-er="kcal"]');
+    nameInput.oninput = () => {
+      formExerciseRows[i].name = nameInput.value;
+      const k = lastKcalForExerciseName(nameInput.value);
+      if (k != null && !kcalInput.value) {
+        kcalInput.value = k;
+        formExerciseRows[i].kcal = k;
+      }
+    };
+    kcalInput.oninput = () => { formExerciseRows[i].kcal = kcalInput.value; };
     row.querySelector('[data-er="del"]').onclick = () => {
       formExerciseRows.splice(i, 1);
       if (formExerciseRows.length === 0) formExerciseRows.push({ name: '', kcal: '' });
       renderExerciseRows(form);
     };
   });
-}
-
-async function estimateAllExerciseRows(btn) {
-  const original = btn.textContent;
-  btn.disabled = true;
-  btn.textContent = '推定中…';
-  try {
-    const weight = latestKnownWeight() || 50;
-    for (let i = 0; i < formExerciseRows.length; i++) {
-      const r = formExerciseRows[i];
-      const name = (r.name || '').trim();
-      if (!name || (r.kcal !== '' && r.kcal != null)) continue;
-      const mins = detectMinutes(name);
-      if (!mins) continue;
-      const met = detectMET(name);
-      r.kcal = Math.round(met * weight * (mins / 60));
-    }
-    const form = document.getElementById('addForm');
-    renderExerciseRows(form);
-    setStatus('推定 ✓');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = original;
-  }
 }
 
 function imageReferenceCount(filename) {
@@ -2324,101 +2138,6 @@ async function runKcalLookup(form, type, btn) {
   }
 }
 
-function bindFavChips(type) {
-  const form = document.getElementById('addForm');
-  form.querySelectorAll('.fav-chip').forEach(chip => {
-    chip.onclick = (ev) => {
-      if (ev.target.classList.contains('fav-del')) {
-        ev.stopPropagation();
-        const i = parseInt(ev.target.dataset.favDel, 10);
-        if (Number.isFinite(i)) {
-          settings.favorites[type].splice(i, 1);
-          saveSettings();
-          refreshFavRow(type);
-        }
-        return;
-      }
-      const i = parseInt(chip.dataset.favIndex, 10);
-      if (Number.isFinite(i)) addEventFromFavorite(type, i);
-    };
-  });
-}
-
-function refreshFavRow(type) {
-  const form = document.getElementById('addForm');
-  const oldRow = form.querySelector('.fav-row, .fav-row-empty');
-  if (!oldRow) return;
-  const wrapper = document.createElement('div');
-  wrapper.innerHTML = buildFavoritesRow(type);
-  const newRow = wrapper.firstElementChild;
-  if (newRow) {
-    oldRow.replaceWith(newRow);
-    bindFavChips(type);
-  }
-}
-
-function addEventFromFavorite(type, i) {
-  const fav = settings.favorites[type] && settings.favorites[type][i];
-  if (!fav) return;
-  const time = nowTimeForDate(currentDate);
-  const ev = { id: uid(), time, type };
-  if (type === 'meal') {
-    ev.label = fav.label;
-    ev.items = [{ text: fav.text || '', kcal: fav.kcal ?? '' }];
-  } else {
-    const name = `${fav.name || ''}${fav.value ? ' ' + fav.value : ''}`.trim();
-    ev.items = [{ name, kcal: fav.kcal ?? '' }];
-  }
-  entry.events.push(ev);
-  cancelAddForm();
-  renderTimeline();
-  scheduleSave();
-  setStatus('追加 ✓');
-}
-
-function saveFavoriteFromForm() {
-  if (!activeAddType) return;
-  const form = document.getElementById('addForm');
-  const getSeg = name => {
-    const el = form.querySelector(`[data-seg="${name}"] button.on`);
-    return el ? el.dataset.val : '';
-  };
-  if (!settings.favorites) settings.favorites = { meal: [], exercise: [] };
-  let added = 0;
-  if (activeAddType === 'meal' && Array.isArray(formMealRows)) {
-    const label = getSeg('label');
-    if (!label) { alert('区分を選んでください'); return; }
-    if (!Array.isArray(settings.favorites.meal)) settings.favorites.meal = [];
-    for (const r of formMealRows) {
-      const text = (r.text || '').trim();
-      if (!text) continue;
-      const k = r.kcal === '' || r.kcal == null ? '' : parseFloat(r.kcal);
-      const dupe = settings.favorites.meal.some(f => f.label === label && (f.text || '').trim() === text);
-      if (dupe) continue;
-      settings.favorites.meal.push({ label, text, kcal: k });
-      added++;
-    }
-    if (added === 0) { alert('登録できる内容がありません（重複・空行）'); return; }
-  } else if (activeAddType === 'exercise' && Array.isArray(formExerciseRows)) {
-    if (!Array.isArray(settings.favorites.exercise)) settings.favorites.exercise = [];
-    for (const r of formExerciseRows) {
-      const name = (r.name || '').trim();
-      if (!name) continue;
-      const k = r.kcal === '' || r.kcal == null ? '' : parseFloat(r.kcal);
-      const dupe = settings.favorites.exercise.some(f => (f.name || '').trim() === name);
-      if (dupe) continue;
-      settings.favorites.exercise.push({ name, kcal: k });
-      added++;
-    }
-    if (added === 0) { alert('登録できる内容がありません（重複・空行）'); return; }
-  } else {
-    return;
-  }
-  saveSettings();
-  refreshFavRow(activeAddType);
-  setStatus(`★いつもの に ${added} 件登録 ✓`);
-}
-
 function cancelAddForm() {
   activeAddType = null;
   editingId = null;
@@ -2605,6 +2324,52 @@ function exerciseItems(e) {
     return [{ name, kcal: e.kcal ?? '' }];
   }
   return [];
+}
+
+// History-derived autocomplete: surface past meal/exercise items by frequency.
+// Replaces the old explicit ★いつもの mechanism.
+function historicalEntriesByFreq(type, getKey) {
+  const counts = new Map(); // key -> { count, lastDate, lastKcal }
+  for (const [date, day] of Object.entries(cache)) {
+    if (!Array.isArray(day?.events)) continue;
+    for (const e of day.events) {
+      if (e.type !== type) continue;
+      const items = type === 'meal' ? mealItems(e) : exerciseItems(e);
+      for (const it of items) {
+        const key = (getKey(it) || '').trim();
+        if (!key) continue;
+        const k = it.kcal === '' || it.kcal == null ? null : parseFloat(it.kcal);
+        const cur = counts.get(key) || { count: 0, lastDate: '', lastKcal: null };
+        cur.count++;
+        if (date > cur.lastDate) {
+          cur.lastDate = date;
+          if (Number.isFinite(k)) cur.lastKcal = k;
+        }
+        counts.set(key, cur);
+      }
+    }
+  }
+  return [...counts.entries()]
+    .sort((a, b) => (b[1].count - a[1].count) || b[1].lastDate.localeCompare(a[1].lastDate))
+    .slice(0, 30)
+    .map(([key, info]) => ({ key, kcal: info.lastKcal }));
+}
+
+function historicalMealTexts() {
+  return historicalEntriesByFreq('meal', it => it.text);
+}
+function historicalExerciseNames() {
+  return historicalEntriesByFreq('exercise', it => it.name);
+}
+function lastKcalForMealText(text) {
+  const t = (text || '').trim();
+  if (!t) return null;
+  return historicalMealTexts().find(e => e.key === t)?.kcal ?? null;
+}
+function lastKcalForExerciseName(name) {
+  const n = (name || '').trim();
+  if (!n) return null;
+  return historicalExerciseNames().find(e => e.key === n)?.kcal ?? null;
 }
 
 function sortedEvents() {
@@ -3093,56 +2858,6 @@ function renderHistory() {
 }
 
 //===================== Settings UI =====================
-function renderFavList() {
-  const body = document.getElementById('favListBody');
-  if (!body) return;
-  const meals = (settings.favorites && settings.favorites.meal) || [];
-  const exes = (settings.favorites && settings.favorites.exercise) || [];
-  if (meals.length === 0 && exes.length === 0) {
-    body.innerHTML = '<div style="color:var(--ink-soft);font-size:13px">まだ登録がありません。</div>';
-    return;
-  }
-  let html = '';
-  if (meals.length) {
-    html += '<div class="fav-list-group">🍽 食事</div>';
-    html += meals.map((f, i) => {
-      const k = parseFloat(f.kcal);
-      const sub = Number.isFinite(k) ? ` · ${k}kcal` : '';
-      return `<div class="fav-list-item">
-        <div class="info"><span class="fav-tag">${escapeHtml(f.label || '')}</span><span>${escapeHtml(f.text || '')}${sub}</span></div>
-        <button class="ghost danger" data-fav-meal-del="${i}">削除</button>
-      </div>`;
-    }).join('');
-  }
-  if (exes.length) {
-    html += '<div class="fav-list-group">🏃 運動</div>';
-    html += exes.map((f, i) => {
-      const k = parseFloat(f.kcal);
-      const sub = Number.isFinite(k) ? ` · ${k}kcal` : '';
-      const text = `${f.name || ''}${f.value ? ' ' + f.value : ''}`.trim();
-      return `<div class="fav-list-item">
-        <div class="info"><span>${escapeHtml(text)}${sub}</span></div>
-        <button class="ghost danger" data-fav-ex-del="${i}">削除</button>
-      </div>`;
-    }).join('');
-  }
-  body.innerHTML = html;
-  body.querySelectorAll('[data-fav-meal-del]').forEach(b => {
-    b.onclick = () => {
-      settings.favorites.meal.splice(parseInt(b.dataset.favMealDel, 10), 1);
-      saveSettings();
-      renderFavList();
-    };
-  });
-  body.querySelectorAll('[data-fav-ex-del]').forEach(b => {
-    b.onclick = () => {
-      settings.favorites.exercise.splice(parseInt(b.dataset.favExDel, 10), 1);
-      saveSettings();
-      renderFavList();
-    };
-  });
-}
-
 function renderStorageInfo() {
   const el = document.getElementById('storageInfo');
   const count = Object.keys(cache).length;
@@ -3163,7 +2878,7 @@ function switchTab(name) {
   });
   if (name === 'preview') renderPreview();
   if (name === 'history') renderHistory();
-  if (name === 'settings') { renderStorageInfo(); renderFavList(); }
+  if (name === 'settings') renderStorageInfo();
 }
 document.querySelectorAll('.tabs button').forEach(b => {
   b.onclick = () => switchTab(b.dataset.tab);
