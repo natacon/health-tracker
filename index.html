@@ -2242,6 +2242,55 @@ function openGoogleSearchFallback(type, form) {
   window.open(`https://www.google.com/search?q=${encodeURIComponent(q)}`, '_blank', 'noopener');
 }
 
+async function autofillKcalAsync(eventId) {
+  const findEv = () => entry.events.find(e => e.id === eventId) || null;
+  const initial = findEv();
+  if (!initial || !Array.isArray(initial.items)) return;
+
+  const targets = initial.items
+    .map((it, i) => ({ i, item: it }))
+    .filter(({ item }) => (item.kcal === '' || item.kcal == null) &&
+      ((initial.type === 'meal' && item.text) || (initial.type === 'exercise' && item.name)));
+  if (targets.length === 0) return;
+
+  setStatus('kcal推定中…');
+  const results = await Promise.all(targets.map(async ({ i, item }) => {
+    try {
+      if (initial.type === 'meal' && item.text) {
+        const k = await lookupMealKcal(item.text);
+        return { i, k };
+      }
+      if (initial.type === 'exercise' && item.name) {
+        const mins = detectMinutes(item.name);
+        if (mins) {
+          const met = detectMET(item.name);
+          const weight = latestKnownWeight() || 50;
+          return { i, k: Math.round(met * weight * (mins / 60)) };
+        }
+      }
+    } catch {}
+    return { i, k: null };
+  }));
+
+  let updated = false;
+  const cur = findEv();
+  if (cur && Array.isArray(cur.items)) {
+    for (const { i, k } of results) {
+      if (Number.isFinite(k) && cur.items[i] && (cur.items[i].kcal === '' || cur.items[i].kcal == null)) {
+        cur.items[i].kcal = k;
+        updated = true;
+      }
+    }
+  }
+  if (updated) {
+    renderTimeline();
+    scheduleSave();
+    setStatus('kcal自動入力 ✓');
+  } else {
+    setStatus('—');
+  }
+}
+
 async function runKcalLookup(form, type, btn) {
   const kcalInput = form.querySelector('[data-f="kcal"]');
   const original = btn.textContent;
@@ -2449,6 +2498,7 @@ async function saveAddForm() {
     renderTimeline();
     scheduleSave();
     setStatus(editingId ? '更新 ✓' : `${Math.max(items.length, 1)}件保存 ✓`);
+    autofillKcalAsync(ev.id);
     return;
   }
   if (activeAddType === 'exercise' && Array.isArray(formExerciseRows)) {
@@ -2485,6 +2535,7 @@ async function saveAddForm() {
     renderTimeline();
     scheduleSave();
     setStatus(editingId ? '更新 ✓' : `${Math.max(items.length, 1)}件保存 ✓`);
+    autofillKcalAsync(ev.id);
     return;
   }
 
