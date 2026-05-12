@@ -11,7 +11,7 @@ Personal health/diet PWA for daily logging (weight, meals, exercise, mood, weath
 The single user is the developer's wife. Treat the following as the design context for any UX decision:
 
 - **Heavy SNS user.** She lives in Instagram/Threads/X. Visual outputs (the Preview tab, screenshots, share cards) and chip-style one-tap interactions match her habits; long forms and multi-step flows do not.
-- **Was logging diet via ChatGPT.** This app is replacing that workflow. The bar is conversational speed: if logging takes more taps than typing a sentence to a chatbot, she'll go back. Favor: favorites/`★いつもの`, paste-friendly fields, autofill (weather), Web Share Target.
+- **Was logging diet via ChatGPT.** This app is replacing that workflow. The bar is conversational speed: if logging takes more taps than typing a sentence to a chatbot, she'll go back. Favor: history-derived autocomplete on meal/exercise text fields, paste-friendly fields, autofill (weather + post-save kcal), Web Share Target.
 - **YouTube exercise videos.** She watches workout videos and screenshots her YouTube watch history; exercise entries are populated by OCR on the attached screenshot (Tesseract.js) — there is no URL field anymore.
 - **Mobile-first, Tokyo, JP language.** Layout assumes a single-column phone viewport. Auto-features (weather, time, dates) hardcode Tokyo / `Asia/Tokyo` / Japanese day names — generalizing them is a non-goal.
 - **Solo, on her own device.** No multi-user, no auth, no sync server. Cross-device backup is the export/import folder, not a backend.
@@ -54,11 +54,11 @@ Settings (`goalWeight`, `favorites`) and the "auto weather fetched today" flag (
 
 Export/Import via `showDirectoryPicker()` writes/reads the same per-day JSON shape — useful for cross-device backup.
 
-### Add form / favorites
+### Add form / history-derived autocomplete
 
-`buildAddForm(type, prefill)` returns the form HTML for one event type. `openAddForm()` mounts it and binds events. `editingId` distinguishes add-new (null) vs edit-existing — when editing, the favorites row and "★ いつもの" button are hidden.
+`buildAddForm(type, prefill)` returns the form HTML for one event type. `openAddForm()` mounts it and binds events. `editingId` distinguishes add-new (null) vs edit-existing.
 
-Favorites for `meal` and `exercise` live in `settings.favorites[type]`. Tapping a favorite chip in the form bypasses the form entirely and directly pushes an event using `nowTimeForDate()`.
+There is no explicit "★いつもの" save step anymore. Meal `内容` and exercise `内容` inputs use `<datalist>`s populated by `historicalMealTexts()` / `historicalExerciseNames()`, which scan `cache` for past `items` ranked by frequency then recency. Picking (or typing) a past entry auto-fills the row's kcal from the most recent matching record (only when the kcal cell is still empty). The deprecated `settings.favorites` field is deleted on init.
 
 ### Auto features that hit external APIs
 
@@ -74,7 +74,7 @@ Favorites for `meal` and `exercise` live in `settings.favorites[type]`. Tapping 
 
 ## Things that bite
 
-- **Bump `CACHE` in `sw.js`** on every user-facing change, otherwise the old cached `index.html` keeps serving. Currently `health-tracker-v23`.
+- **Bump `CACHE` in `sw.js`** on every user-facing change, otherwise the old cached `index.html` keeps serving. Currently `health-tracker-v24`.
 - **OPFS is per-origin and per-browser**: data does not sync across devices. Use the export/import buttons.
 - The SW's fetch handler falls back to `./index.html` on navigation when offline — keep that intact for the PWA experience.
 - The `start_url` and `scope` in `manifest.json` are `.` so the app works at any subpath (e.g. `/health-tracker/` on Pages).
