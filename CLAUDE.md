@@ -11,8 +11,8 @@ Personal health/diet PWA for daily logging (weight, meals, exercise, mood, weath
 The single user is the developer's wife. Treat the following as the design context for any UX decision:
 
 - **Heavy SNS user.** She lives in Instagram/Threads/X. Visual outputs (the Preview tab, screenshots, share cards) and chip-style one-tap interactions match her habits; long forms and multi-step flows do not.
-- **Was logging diet via ChatGPT.** This app is replacing that workflow. The bar is conversational speed: if logging takes more taps than typing a sentence to a chatbot, she'll go back. Favor: favorites/`★いつもの`, paste-friendly fields, autofill (weather), Web Share Target (YouTube → exercise form).
-- **YouTube exercise videos.** She historically pasted video links or screenshots of YouTube watch history. Exercise events carry an optional `url`; YouTube URLs auto-render thumbnails everywhere they appear.
+- **Was logging diet via ChatGPT.** This app is replacing that workflow. The bar is conversational speed: if logging takes more taps than typing a sentence to a chatbot, she'll go back. Favor: favorites/`★いつもの`, paste-friendly fields, autofill (weather), Web Share Target.
+- **YouTube exercise videos.** She watches workout videos and screenshots her YouTube watch history; exercise entries are populated by OCR on the attached screenshot (Tesseract.js) — there is no URL field anymore.
 - **Mobile-first, Tokyo, JP language.** Layout assumes a single-column phone viewport. Auto-features (weather, time, dates) hardcode Tokyo / `Asia/Tokyo` / Japanese day names — generalizing them is a non-goal.
 - **Solo, on her own device.** No multi-user, no auth, no sync server. Cross-device backup is the export/import folder, not a backend.
 
@@ -21,7 +21,7 @@ When proposing features, prefer the SNS-pattern equivalent (streaks, share cards
 ## Stack and conventions
 
 - Vanilla HTML/CSS/JS in a **single `index.html`** — all CSS in one `<style>`, all JS in one `<script>`. There is no build step, no bundler, no package manager, no test framework.
-- PWA: `manifest.json` + `sw.js` (cache-first service worker). Registered as a Web Share Target so YouTube share lands in the exercise add form.
+- PWA: `manifest.json` + `sw.js` (cache-first service worker). Registered as a Web Share Target — shared text/title lands in the exercise form's first row.
 - Deployed to GitHub Pages via `.github/workflows/pages.yml` on push to `main`. The repo's Pages source must be set to "GitHub Actions" in repo settings (one-time, manual).
 
 ## Running locally
@@ -61,7 +61,6 @@ Favorites for `meal` and `exercise` live in `settings.favorites[type]`. Tapping 
 ### Auto features that hit external APIs
 
 - **Tokyo weather**: Open-Meteo (`api.open-meteo.com`), no key. Hourly endpoint, picking the 12:00 (noon) slot of the displayed date. Auto-fetched once per day (gated by `AUTO_WEATHER_FLAG_KEY`) when viewing today and no weather event exists. Stored with `time: '12:00'`.
-- **YouTube thumbnails**: `img.youtube.com/vi/{id}/mqdefault.jpg` — public, no API. `youtubeId()` parses watch/youtu.be/shorts/embed URLs.
 - **Kcal lookup**: `🔍 推定` button in meal/exercise add forms tries to auto-fill kcal:
   - Meal: Open Food Facts search → ja.wikipedia search/extract — first plausible `<n>kcal` wins.
   - Exercise: hardcoded MET dictionary keyed on workout name + `<n>分` duration in the value field, multiplied by latest known body weight (default 50kg).
@@ -72,11 +71,11 @@ Favorites for `meal` and `exercise` live in `settings.favorites[type]`. Tapping 
 
 ## Things that bite
 
-- **Bump `CACHE` in `sw.js`** on every user-facing change, otherwise the old cached `index.html` keeps serving. Currently `health-tracker-v19`.
+- **Bump `CACHE` in `sw.js`** on every user-facing change, otherwise the old cached `index.html` keeps serving. Currently `health-tracker-v20`.
 - **OPFS is per-origin and per-browser**: data does not sync across devices. Use the export/import buttons.
 - The SW's fetch handler falls back to `./index.html` on navigation when offline — keep that intact for the PWA experience.
 - The `start_url` and `scope` in `manifest.json` are `.` so the app works at any subpath (e.g. `/health-tracker/` on Pages).
 
 ## Workflow
 
-- **Push directly to `main`.** Skip PRs — the user reviews changes in the deployed app, not GitHub. Don't open draft PRs "just in case." This overrides the harness default of "always create a PR after pushing."
+- **Push via PR, then squash-merge immediately.** Direct push to `main` is blocked by the local proxy (`HTTP 403`). The working flow is: commit locally → `git push --force-with-lease origin HEAD:claude/diet-app-ux-improvements-z8TGu` → `mcp__github__create_pull_request` (base `main`, head feature branch, `draft: false`) → `mcp__github__merge_pull_request` (`merge_method: squash`) → `git fetch && git reset --hard origin/main` locally. Don't leave PRs open for review — squash and merge in the same turn.
